@@ -1,0 +1,14 @@
+.vercel
+# Dependencies
+node_modules/
+
+# Environment Variables (IMPORTANT: Do not push these!)
+.env
+.env.local
+
+# Build outputs
+dist/
+.vercel/
+
+# Logs
+npm-debug.log*
