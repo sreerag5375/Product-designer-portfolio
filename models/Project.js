@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const ProjectSchema = new mongoose.Schema({
-  title: {
+  name: {
     type: String,
     required: true,
   },
@@ -9,11 +9,38 @@ const ProjectSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  type: {
+    type: String,
+    enum: ['app', 'website', 'webapp'],
+    required: true,
+  },
+  category: {
+    type: String,
+    required: true,
+  },
   imageUrl: {
     type: String,
-    default: 'https://via.placeholder.com/600x400',
+    default: '/folder.png',
   },
-  tags: [String],
+  logoBase64: {
+    type: String,
+    required: true,
+  },
+  subtitle: {
+    type: String,
+  },
+  links: {
+    playStore: String,
+    appStore: String,
+    website: String,
+  },
+  designSections: [{
+    title: String,
+    items: [{
+      title: String,
+      imageBase64: String,
+    }]
+  }],
   createdAt: {
     type: Date,
     default: Date.now,

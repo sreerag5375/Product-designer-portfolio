@@ -1,28 +1,59 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 
-const App = () => {
+const renderFormattedText = (text) => {
+  if (!text) return null;
+  
+  const lines = text.split('\n');
+  const result = [];
+  let currentList = [];
+
+  const parseBold = (str) => {
+    const parts = str.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i}>{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+  };
+
+  lines.forEach((line, index) => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('* ')) {
+      currentList.push(<li key={`${index}-li`}>{parseBold(trimmed.slice(2).trim())}</li>);
+    } else {
+      if (currentList.length > 0) {
+        result.push(<ul key={`${index}-ul`} className="desc-list">{currentList}</ul>);
+        currentList = [];
+      }
+      if (trimmed) {
+        result.push(<p key={index} className="desc-para">{parseBold(trimmed)}</p>);
+      }
+    }
+  });
+
+  if (currentList.length > 0) {
+    result.push(<ul key="final-ul" className="desc-list">{currentList}</ul>);
+  }
+
+  return result;
+};
+
+const Portfolio = () => {
   const [activeTab, setActiveTab] = useState('works');
   const [isWindowVisible, setIsWindowVisible] = useState(true);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const folders = [
-    { id: 1, name: 'LIVO', description: 'Smart logistics and delivery platform.' },
-    { id: 2, name: 'Arikil Ai', description: 'Personalized AI assistant for daily tasks.' },
-    { id: 3, name: 'Vat Dual Price', description: 'Dynamic tax calculation engine for e-commerce.' },
-    { id: 4, name: 'Phonecase', description: 'Interactive 3D phone case design tool.' },
-    { id: 5, name: 'Zabiyo', description: 'Premium fashion e-commerce experience.' },
-    { id: 6, name: 'Life Partner Again', description: 'Deep connection dating platform.' }
-  ];
 
   useEffect(() => {
     fetchProjects();
   }, []);
 
   const fetchProjects = async () => {
+    setLoading(true);
     try {
       const response = await fetch('/api/projects');
       if (!response.ok) throw new Error('Failed to fetch projects');
@@ -30,14 +61,12 @@ const App = () => {
       setProjects(data);
     } catch (err) {
       console.error(err);
-      setError('Mode: Offline Demonstration');
       setProjects([
-        { _id: '1', title: 'Spatial Audio Design', description: 'Immersive soundscape design for VR environments.', imageUrl: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=800', tags: ['VR', 'Audio'] },
-        { _id: '2', title: 'Haptic Feedback Interface', description: 'Tactile response system for medical devices.', imageUrl: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&q=80&w=800', tags: ['Hardware', 'Haptics'] },
-        { _id: '3', title: 'Neural Dashboard', description: 'A brain-computer interface monitoring dashboard.', imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800', tags: ['BCI', 'Dashboards'] }
+        { _id: '1', name: 'LIVO', description: 'Smart logistics and delivery platform.', type: 'webapp', category: 'Logistics' },
+        { _id: '2', name: 'Arikil Ai', description: 'Personalized AI assistant for daily tasks.', type: 'app', category: 'AI' }
       ]);
     } finally {
-      setLoading(false);
+      setTimeout(() => setLoading(false), 800); // Slight delay for smooth transition
     }
   };
 
@@ -58,26 +87,46 @@ const App = () => {
         );
       case 'works':
         if (selectedFolder) {
-          const folder = folders.find(f => f.id === selectedFolder);
+          const folder = projects.find(f => f._id === selectedFolder);
           return (
-            <div className="project-detail">
-              <h1 className="window-hero-title">{folder.name}</h1>
-              <p className="window-hero-subtitle">{folder.description}</p>
-              <div className="project-content">
-                <div className="placeholder-hero">
-                  <img src="/bg-3.png" alt="Project" />
+            <div className="project-detail animate-in">
+              <div className="project-header-row">
+                <div className="project-logo-box">
+                  <img src={folder.logoBase64} alt="Logo" />
                 </div>
-                <div className="project-meta">
-                  <div className="meta-item">
-                    <span className="meta-label">Role</span>
-                    <span className="meta-value">Lead Product Designer</span>
-                  </div>
-                  <div className="meta-item">
-                    <span className="meta-label">Year</span>
-                    <span className="meta-value">2023 - 2024</span>
+                <div className="title-group">
+                  <h1 className="window-hero-title">{folder.name}</h1>
+                  <p className="project-subtitle">{folder.subtitle}</p>
+                  <div className="meta-pill-container">
+                    <span className="meta-pill">{folder.type}</span>
+                    <span className="meta-pill">{folder.category}</span>
                   </div>
                 </div>
               </div>
+
+              <div className="platform-links">
+                {folder.links?.website && <a href={folder.links.website} target="_blank" className="link-btn">Website</a>}
+                {folder.links?.playStore && <a href={folder.links.playStore} target="_blank" className="link-btn">Play Store</a>}
+                {folder.links?.appStore && <a href={folder.links.appStore} target="_blank" className="link-btn">App Store</a>}
+              </div>
+              
+              <div className="content-section">
+                <div className="what-we-like-text">{renderFormattedText(folder.description)}</div>
+              </div>
+
+              {folder.designSections?.map((section, sIdx) => (
+                <div key={sIdx} className="content-section">
+                  <h2 className="section-label">{section.title}</h2>
+                  <div className="screenshots-tray">
+                    {section.items?.map((item, iIdx) => (
+                      <div key={iIdx} className="screen-card">
+                        <img src={item.imageBase64} alt={item.title} className="screen-shot" />
+                        <span className="screen-title">{item.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           );
         }
@@ -86,18 +135,25 @@ const App = () => {
           <>
             <h1 className="window-hero-title">Things I Designed</h1>
             <div className="folder-grid">
-              {folders.map(folder => (
-                <div 
-                  key={folder.id} 
-                  className="folder-item" 
-                  onClick={() => setSelectedFolder(folder.id)}
-                >
-                  <div className="folder-icon-wrapper">
-                    <img src="/folder.png" alt="Folder" className="folder-img" />
+              {loading ? (
+                /* Shimmer Grid */
+                [1, 2, 3, 4, 5, 6].map(i => (
+                  <div key={i} className="folder-item skeleton-item">
+                    <div className="folder-icon-wrapper skeleton"></div>
+                    <div className="skeleton-text"></div>
                   </div>
-                  <span className="folder-name">{folder.name}</span>
-                </div>
-              ))}
+                ))
+              ) : (
+                /* Real Folders */
+                projects.map(folder => (
+                  <div key={folder._id} className="folder-item" onClick={() => setSelectedFolder(folder._id)}>
+                    <div className="folder-icon-wrapper">
+                      <img src="/folder.png" alt="Folder" className="folder-img" />
+                    </div>
+                    <span className="folder-name">{folder.name}</span>
+                  </div>
+                ))
+              )}
             </div>
           </>
         );
@@ -111,11 +167,6 @@ const App = () => {
                 <h3>The Future of Spatial Computing</h3>
                 <p>Exploring how visionOS is changing the way we perceive digital depth.</p>
               </div>
-              <div className="writing-item">
-                <span className="date">Aug 2023</span>
-                <h3>Designing for the subconscious</h3>
-                <p>Why micro-interactions are the heartbeat of modern UX.</p>
-              </div>
             </div>
           </section>
         );
@@ -123,11 +174,9 @@ const App = () => {
         return (
           <section className="info-section">
             <h2>Learning Resources</h2>
-            <p>A curated collection of tools and frameworks I use to sharpen my craft.</p>
             <div className="resource-grid">
               <div className="resource-tag">Figma Foundations</div>
               <div className="resource-tag">React for Designers</div>
-              <div className="resource-tag">Three.js Mastery</div>
             </div>
           </section>
         );
@@ -140,85 +189,476 @@ const App = () => {
     <div className="app-container">
       <main onClick={() => setIsWindowVisible(false)}>
         <div className="immersive-bg"></div>
-        
         {isWindowVisible && (
-          <div 
-            className={`mac-window ${isFullScreen ? 'full-screen' : ''}`}
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className={`mac-window ${isFullScreen ? 'full-screen' : ''}`} onClick={(e) => e.stopPropagation()}>
             <div className="window-header">
               <div className="traffic-lights">
                 {selectedFolder && activeTab === 'works' ? (
-                  <button 
-                    className="header-back-button" 
-                    onClick={() => setSelectedFolder(null)}
-                    title="Back to Works"
-                  >
-                    <span>←</span>
-                  </button>
+                  <button className="header-back-button" onClick={() => setSelectedFolder(null)}><span>←</span></button>
                 ) : (
                   <>
-                    <span className="traffic-dot red" onClick={() => setIsWindowVisible(false)}>
-                      <span>✕</span>
-                    </span>
-                    <span className="traffic-dot yellow" onClick={() => setIsFullScreen(false)}>
-                      <span>−</span>
-                    </span>
-                    <span className="traffic-dot green" onClick={() => setIsFullScreen(!isFullScreen)}>
-                      <span>+</span>
-                    </span>
+                    <span className="traffic-dot red" onClick={() => setIsWindowVisible(false)}><span>✕</span></span>
+                    <span className="traffic-dot yellow" onClick={() => setIsFullScreen(false)}><span>−</span></span>
+                    <span className="traffic-dot green" onClick={() => setIsFullScreen(!isFullScreen)}><span>+</span></span>
                   </>
                 )}
               </div>
               <div className="window-title">
-                {selectedFolder && activeTab === 'works' ? (
-                  folders.find(f => f.id === selectedFolder)?.name
-                ) : (
-                  activeTab.charAt(0).toUpperCase() + activeTab.slice(1)
-                )}
+                {selectedFolder && activeTab === 'works' ? projects.find(f => f._id === selectedFolder)?.name : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
               </div>
               <div className="window-actions-placeholder" style={{ width: '52px' }}></div>
             </div>
-            <div className="window-body">
-              {renderContent()}
-            </div>
+            <div className="window-body">{renderContent()}</div>
           </div>
         )}
       </main>
-
       <div className="dock-container">
         <nav className="dock">
-          <button 
-            className={`dock-item ${activeTab === 'about' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('about'); setIsWindowVisible(true); }}
-          >
-            <img src="/Profile.png" alt="About" className="dock-icon" />
-            <span className="label">About</span>
-          </button>
-          <button 
-            className={`dock-item ${activeTab === 'works' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('works'); setIsWindowVisible(true); }}
-          >
-            <img src="/Works.png" alt="Works" className="dock-icon" />
-            <span className="label">Works</span>
-          </button>
-          <button 
-            className={`dock-item ${activeTab === 'writings' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('writings'); setIsWindowVisible(true); }}
-          >
-            <img src="/Writings.png" alt="Writings" className="dock-icon" />
-            <span className="label">Writings</span>
-          </button>
-          <button 
-            className={`dock-item ${activeTab === 'learning' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('learning'); setIsWindowVisible(true); }}
-          >
-            <img src="/Learnings.png" alt="Learning" className="dock-icon" />
-            <span className="label">Learning</span>
-          </button>
+          {['about', 'works', 'writings', 'learning'].map(tab => (
+            <button key={tab} className={`dock-item ${activeTab === tab ? 'active' : ''}`} onClick={() => { setActiveTab(tab); setIsWindowVisible(true); }}>
+              <img src={`/${tab.charAt(0).toUpperCase() + tab.slice(1)}.png`} alt={tab} className="dock-icon" />
+              <span className="label">{tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
+            </button>
+          ))}
         </nav>
       </div>
     </div>
+  );
+};
+
+const Admin = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [projects, setProjects] = useState([]);
+  const [selectedFolderId, setSelectedFolderId] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [activeFormTab, setActiveFormTab] = useState('general');
+  const [formData, setFormData] = useState({ 
+    name: '', 
+    description: '', 
+    type: 'app', 
+    category: '',
+    subtitle: '',
+    logoBase64: '',
+    links: { playStore: '', appStore: '', website: '' },
+    designSections: [{ title: '', items: [{ title: '', imageBase64: '' }] }]
+  });
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated) fetchProjects();
+  }, [isAuthenticated]);
+
+  const fetchProjects = async () => {
+    const res = await fetch('/api/projects');
+    const data = await res.json();
+    setProjects(data);
+  };
+  const handleLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, logoBase64: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const moveItem = (sIdx, iIdx, direction) => {
+    const newSections = [...formData.designSections];
+    const items = [...newSections[sIdx].items];
+    const targetIdx = direction === 'up' ? iIdx - 1 : iIdx + 1;
+    
+    // Swap items
+    [items[iIdx], items[targetIdx]] = [items[targetIdx], items[iIdx]];
+    newSections[sIdx].items = items;
+    setFormData({ ...formData, designSections: newSections });
+  };
+
+  const handleItemImageUpload = (sIdx, iIdx, e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const newSections = [...formData.designSections];
+        newSections[sIdx].items[iIdx].imageBase64 = reader.result;
+        setFormData({ ...formData, designSections: newSections });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    setIsLoggingIn(true);
+    setTimeout(() => {
+      if (username === '1' && password === '1') {
+        setIsAuthenticated(true);
+      } else {
+        alert('Invalid credentials');
+      }
+      setIsLoggingIn(false);
+    }, 1000);
+  };
+
+  const handleEdit = (project) => {
+    setFormData({
+      name: project.name || '',
+      description: project.description || '',
+      type: project.type || 'app',
+      category: project.category || '',
+      subtitle: project.subtitle || '',
+      logoBase64: project.logoBase64 || '',
+      links: project.links || { playStore: '', appStore: '', website: '' },
+      designSections: project.designSections || [{ title: '', items: [{ title: '', imageBase64: '' }] }]
+    });
+    setEditingId(project._id);
+    setActiveFormTab('general');
+    setIsModalOpen(true);
+  };
+
+  const handleAddProject = async (e) => {
+    e.preventDefault();
+    if (!formData.logoBase64) return alert('Logo is mandatory!');
+    setIsSubmitting(true);
+    try {
+      const url = '/api/projects';
+      const method = editingId ? 'PUT' : 'POST';
+      const body = editingId ? { ...formData, id: editingId } : formData;
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        setIsModalOpen(false);
+        setEditingId(null);
+        setActiveFormTab('general');
+        setFormData({ 
+          name: '', description: '', type: 'app', category: '', subtitle: '', logoBase64: '',
+          links: { playStore: '', appStore: '', website: '' },
+          designSections: [{ title: '', items: [{ title: '', imageBase64: '' }] }]
+        });
+        fetchProjects();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) return;
+    
+    try {
+      const res = await fetch('/api/projects', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (res.ok) {
+        setSelectedFolderId(null);
+        fetchProjects();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="admin-login-overlay">
+        <div className="login-card mac-window">
+          <h2>Admin Login</h2>
+          <form onSubmit={handleLogin}>
+            <input type="text" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} required />
+            <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} required />
+            <div className="login-actions">
+              <button type="button" onClick={() => navigate('/')}>Cancel</button>
+              <button type="submit" className="primary" disabled={isLoggingIn}>
+                {isLoggingIn ? 'Logging in...' : 'Login'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  const selectedProject = projects.find(p => p._id === selectedFolderId);
+
+  return (
+    <div className="admin-dashboard">
+      <div className="immersive-bg"></div>
+      <div className="mac-window admin-window">
+        <div className="window-header">
+          <div className="traffic-lights">
+            {selectedFolderId ? (
+              <button className="header-back-button" onClick={() => setSelectedFolderId(null)}><span>←</span></button>
+            ) : (
+              <span className="traffic-dot red" onClick={() => navigate('/')}><span>✕</span></span>
+            )}
+          </div>
+          <div className="window-title">
+            {selectedFolderId ? selectedProject?.name : 'Admin Dashboard'}
+          </div>
+          {selectedFolderId ? (
+            <div className="header-actions">
+              <button className="header-edit-button" onClick={() => handleEdit(selectedProject)}>
+                <span>✏️</span> Edit Project
+              </button>
+              <button className="header-delete-button" onClick={() => handleDelete(selectedProject._id)}>
+                <span>🗑️</span> Delete Project
+              </button>
+            </div>
+          ) : (
+            <button className="add-project-btn" onClick={() => {
+              setEditingId(null);
+              setFormData({ 
+                name: '', description: '', type: 'app', category: '', subtitle: '', logoBase64: '',
+                links: { playStore: '', appStore: '', website: '' },
+                designSections: [{ title: '', items: [{ title: '', imageBase64: '' }] }]
+              });
+              setIsModalOpen(true);
+            }}>➕ Add Project</button>
+          )}
+        </div>
+        <div className="window-body">
+          {selectedFolderId ? (
+            <div className="project-detail animate-in">
+              <div className="project-header-row">
+                <div className="project-logo-box">
+                  <img src={selectedProject.logoBase64} alt="Logo" />
+                </div>
+                <div className="title-group">
+                  <h1 className="window-hero-title">{selectedProject.name}</h1>
+                  <p className="project-subtitle">{selectedProject.subtitle}</p>
+                  <div className="meta-pill-container">
+                    <span className="meta-pill">{selectedProject.type}</span>
+                    <span className="meta-pill">{selectedProject.category}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="content-section">
+                <div className="what-we-like-text">{renderFormattedText(selectedProject.description)}</div>
+              </div>
+
+              {selectedProject.designSections?.map((section, sIdx) => (
+                <div key={sIdx} className="content-section">
+                  <h2 className="section-label">{section.title}</h2>
+                  <div className="screenshots-tray">
+                    {section.items?.map((item, iIdx) => (
+                      <div key={iIdx} className="screen-card">
+                        <img src={item.imageBase64 || item.imageUrl} alt={item.title} className="screen-shot" />
+                        <span className="screen-title">{item.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <>
+              <h1 className="window-hero-title">Your Projects</h1>
+              <div className="folder-grid">
+                {projects.map(p => (
+                  <div key={p._id} className="folder-item" onClick={() => setSelectedFolderId(p._id)}>
+                    <div className="folder-icon-wrapper"><img src="/folder.png" className="folder-img" /></div>
+                    <span className="folder-name">{p.name}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {isModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content mac-window">
+            <div className="window-header">
+              <div className="window-title">{editingId ? `Edit ${formData.name}` : 'Add something new'}</div>
+              <div className="traffic-lights"><span className="traffic-dot red" onClick={() => setIsModalOpen(false)}><span>✕</span></span></div>
+            </div>
+            <div className="window-body">
+              <div className="form-tabs">
+                <button type="button" className={activeFormTab === 'general' ? 'active' : ''} onClick={() => setActiveFormTab('general')}>1. General</button>
+                <button type="button" className={activeFormTab === 'links' ? 'active' : ''} onClick={() => setActiveFormTab('links')}>2. Links</button>
+                <button type="button" className={activeFormTab === 'content' ? 'active' : ''} onClick={() => setActiveFormTab('content')}>3. Content</button>
+              </div>
+
+              <form onSubmit={handleAddProject} className="modern-form">
+                <div className="form-tab-content">
+                  {activeFormTab === 'general' && (
+                    <div className="tab-pane animate-in">
+                      <div className="form-group">
+                        <label>Project Name</label>
+                        <input type="text" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} required placeholder="Enter project name" />
+                      </div>
+                      <div className="form-row">
+                        <div className="form-group flex-1">
+                          <label>Type</label>
+                          <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
+                            <option value="app">Mobile App</option>
+                            <option value="website">Website</option>
+                            <option value="webapp">Web Application</option>
+                          </select>
+                        </div>
+                        <div className="form-group flex-1">
+                          <label>Category</label>
+                          <input type="text" value={formData.category || ''} onChange={e => setFormData({...formData, category: e.target.value})} required placeholder="e.g. Fintech" />
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label>Subtitle (Tagline)</label>
+                        <input type="text" value={formData.subtitle || ''} onChange={e => setFormData({...formData, subtitle: e.target.value})} placeholder="Short catchphrase" />
+                      </div>
+                      <div className="form-group">
+                        <label>Logo</label>
+                        <div className="logo-upload-zone">
+                          <input type="file" id="logo-input" accept="image/*" onChange={handleLogoUpload} required={!editingId} className="hidden-input" />
+                          <label htmlFor="logo-input" className="file-box-trigger">
+                            {formData.logoBase64 ? (
+                              <div className="preview-wrap">
+                                <img src={formData.logoBase64} alt="Logo" />
+                                <span>Change Logo</span>
+                              </div>
+                            ) : (
+                              <div className="placeholder-wrap">
+                                <span>+</span>
+                                <p>Upload Brand Logo</p>
+                              </div>
+                            )}
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeFormTab === 'links' && (
+                    <div className="tab-pane animate-in">
+                      <div className="form-section-intro">
+                        <h3>Platform Links</h3>
+                        <p>Where can people find your project?</p>
+                      </div>
+                      <div className="form-group">
+                        <label>Official Website URL</label>
+                        <input type="text" value={formData.links?.website || ''} onChange={e => setFormData({...formData, links: {...formData.links, website: e.target.value}})} placeholder="https://..." />
+                      </div>
+                      <div className="form-group">
+                        <label>Google Play Store URL</label>
+                        <input type="text" value={formData.links?.playStore || ''} onChange={e => setFormData({...formData, links: {...formData.links, playStore: e.target.value}})} placeholder="https://..." />
+                      </div>
+                      <div className="form-group">
+                        <label>Apple App Store URL</label>
+                        <input type="text" value={formData.links?.appStore || ''} onChange={e => setFormData({...formData, links: {...formData.links, appStore: e.target.value}})} placeholder="https://..." />
+                      </div>
+                    </div>
+                  )}
+
+                  {activeFormTab === 'content' && (
+                    <div className="tab-pane animate-in">
+                      <div className="form-group">
+                        <label>Description (Rich Project Narrative)</label>
+                        <textarea className="desc-textarea" value={formData.description || ''} onChange={e => setFormData({...formData, description: e.target.value})} required placeholder="Explain the problem you solved..." />
+                      </div>
+
+                      <div className="content-divider"></div>
+                      <div className="form-section-intro">
+                        <h3>Case Study Layout</h3>
+                        <p>Group your screenshots into logical sections.</p>
+                      </div>
+
+                      {formData.designSections.map((section, sIdx) => (
+                        <div key={sIdx} className="form-card-section">
+                          <div className="section-header-pill">
+                            <input type="text" value={section.title || ''} placeholder="Section Title (e.g. Design System)" onChange={e => {
+                              const newSections = [...formData.designSections];
+                              newSections[sIdx].title = e.target.value;
+                              setFormData({...formData, designSections: newSections});
+                            }} />
+                            <button type="button" className="remove-pill-btn" onClick={() => {
+                              const newSections = formData.designSections.filter((_, i) => i !== sIdx);
+                              setFormData({...formData, designSections: newSections});
+                            }}>✕</button>
+                          </div>
+
+                          <div className="nested-item-list">
+                            {section.items.map((item, iIdx) => (
+                              <div key={iIdx} className="modern-item-row">
+                                <div className="row-controls">
+                                  <button type="button" className="mini-move" onClick={() => moveItem(sIdx, iIdx, 'up')} disabled={iIdx === 0}>↑</button>
+                                  <button type="button" className="mini-move" onClick={() => moveItem(sIdx, iIdx, 'down')} disabled={iIdx === section.items.length - 1}>↓</button>
+                                </div>
+                                <div className="row-inputs">
+                                  <input type="text" placeholder="Image Title" value={item.title || ''} onChange={e => {
+                                    const newSections = [...formData.designSections];
+                                    newSections[sIdx].items[iIdx].title = e.target.value;
+                                    setFormData({...formData, designSections: newSections});
+                                  }} />
+                                  <div className="mini-upload">
+                                    <input type="file" id={`file-${sIdx}-${iIdx}`} accept="image/*" className="hidden-input" onChange={e => handleItemImageUpload(sIdx, iIdx, e)} />
+                                    <label htmlFor={`file-${sIdx}-${iIdx}`} className="mini-file-btn">
+                                      {item.imageBase64 || item.imageUrl ? 'Replace Image' : 'Choose Image'}
+                                    </label>
+                                  </div>
+                                </div>
+                                {(item.imageBase64 || item.imageUrl) && (
+                                  <div className="mini-preview-box">
+                                    <img src={item.imageBase64 || item.imageUrl} alt="Thumbnail" />
+                                  </div>
+                                )}
+                                <button type="button" className="row-delete" onClick={() => {
+                                  const newSections = [...formData.designSections];
+                                  newSections[sIdx].items = newSections[sIdx].items.filter((_, i) => i !== iIdx);
+                                  setFormData({...formData, designSections: newSections});
+                                }}>✕</button>
+                              </div>
+                            ))}
+                            <button type="button" className="add-nested-btn" onClick={() => {
+                              const newSections = [...formData.designSections];
+                              newSections[sIdx].items.push({ title: '', imageBase64: '' });
+                              setFormData({...formData, designSections: newSections});
+                            }}>+ Add Image to "{section.title || 'Section'}"</button>
+                          </div>
+                        </div>
+                      ))}
+                      <button type="button" className="add-section-btn" onClick={() => setFormData({...formData, designSections: [...formData.designSections, { title: '', items: [{ title: '', imageBase64: '' }] }]})}>
+                        + Add New Design Section
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="modal-actions">
+                  <button type="button" onClick={() => setIsModalOpen(false)} disabled={isSubmitting}>Cancel</button>
+                  <button type="submit" className="primary" disabled={isSubmitting}>
+                    {isSubmitting ? 'Saving...' : (editingId ? 'Update Project' : 'Add Project')}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const App = () => {
+  return (
+    <Routes>
+      <Route path="/" element={<Portfolio />} />
+      <Route path="/admin" element={<Admin />} />
+    </Routes>
   );
 };
 
