@@ -2,9 +2,21 @@ import React, { useState, useEffect } from 'react';
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('works');
+  const [isWindowVisible, setIsWindowVisible] = useState(true);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [selectedFolder, setSelectedFolder] = useState(null);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const folders = [
+    { id: 1, name: 'LIVO', description: 'Smart logistics and delivery platform.' },
+    { id: 2, name: 'Arikil Ai', description: 'Personalized AI assistant for daily tasks.' },
+    { id: 3, name: 'Vat Dual Price', description: 'Dynamic tax calculation engine for e-commerce.' },
+    { id: 4, name: 'Phonecase', description: 'Interactive 3D phone case design tool.' },
+    { id: 5, name: 'Zabiyo', description: 'Premium fashion e-commerce experience.' },
+    { id: 6, name: 'Life Partner Again', description: 'Deep connection dating platform.' }
+  ];
 
   useEffect(() => {
     fetchProjects();
@@ -34,6 +46,8 @@ const App = () => {
       case 'about':
         return (
           <section className="info-section">
+            <h1 className="window-hero-title">Product Designer</h1>
+            <p className="window-hero-subtitle">Visionary systems. Human-centric depth. Immersive details.</p>
             <h2>About Me</h2>
             <p>I am a visionary product designer focusing on the intersection of human psychology and high-fidelity interfaces. My mission is to build products that feel invisible yet indispensable.</p>
             <div className="bio-stats">
@@ -43,19 +57,49 @@ const App = () => {
           </section>
         );
       case 'works':
-        return (
-          <div className="grid">
-            {!loading && projects.map(project => (
-              <div key={project._id} className="card">
-                <img src={project.imageUrl} alt={project.title} />
-                <h3>{project.title}</h3>
-                <p>{project.description}</p>
-                <div className="tags">
-                  {project.tags?.map(tag => <span key={tag} className="tag">{tag}</span>)}
+        if (selectedFolder) {
+          const folder = folders.find(f => f.id === selectedFolder);
+          return (
+            <div className="project-detail">
+              <h1 className="window-hero-title">{folder.name}</h1>
+              <p className="window-hero-subtitle">{folder.description}</p>
+              <div className="project-content">
+                <div className="placeholder-hero">
+                  <img src="/bg-3.png" alt="Project" />
+                </div>
+                <div className="project-meta">
+                  <div className="meta-item">
+                    <span className="meta-label">Role</span>
+                    <span className="meta-value">Lead Product Designer</span>
+                  </div>
+                  <div className="meta-item">
+                    <span className="meta-label">Year</span>
+                    <span className="meta-value">2023 - 2024</span>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          );
+        }
+
+        return (
+          <>
+            <h1 className="window-hero-title">Things I Designed</h1>
+            <div className="folder-grid">
+              {folders.map(folder => (
+                <div 
+                  key={folder.id} 
+                  className="folder-item" 
+                  onClick={() => setSelectedFolder(folder.id)}
+                >
+                  <div className="folder-icon-wrapper">
+                    <img src="/folder.png" alt="Folder" className="folder-img" />
+                  </div>
+                  <span className="folder-name">{folder.name}</span>
+                </div>
+              ))}
+            </div>
+          </>
         );
       case 'writings':
         return (
@@ -94,45 +138,80 @@ const App = () => {
 
   return (
     <div className="app-container">
-      <main>
+      <main onClick={() => setIsWindowVisible(false)}>
         <div className="immersive-bg"></div>
         
-        <section className="hero">
-          <h1>Product Designer</h1>
-          <p>Visionary systems. Human-centric depth. Immersive details.</p>
-        </section>
-
-        <div className="content-container">
-          {renderContent()}
-        </div>
+        {isWindowVisible && (
+          <div 
+            className={`mac-window ${isFullScreen ? 'full-screen' : ''}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="window-header">
+              <div className="traffic-lights">
+                {selectedFolder && activeTab === 'works' ? (
+                  <button 
+                    className="header-back-button" 
+                    onClick={() => setSelectedFolder(null)}
+                    title="Back to Works"
+                  >
+                    <span>←</span>
+                  </button>
+                ) : (
+                  <>
+                    <span className="traffic-dot red" onClick={() => setIsWindowVisible(false)}>
+                      <span>✕</span>
+                    </span>
+                    <span className="traffic-dot yellow" onClick={() => setIsFullScreen(false)}>
+                      <span>−</span>
+                    </span>
+                    <span className="traffic-dot green" onClick={() => setIsFullScreen(!isFullScreen)}>
+                      <span>+</span>
+                    </span>
+                  </>
+                )}
+              </div>
+              <div className="window-title">
+                {selectedFolder && activeTab === 'works' ? (
+                  folders.find(f => f.id === selectedFolder)?.name
+                ) : (
+                  activeTab.charAt(0).toUpperCase() + activeTab.slice(1)
+                )}
+              </div>
+              <div className="window-actions-placeholder" style={{ width: '52px' }}></div>
+            </div>
+            <div className="window-body">
+              {renderContent()}
+            </div>
+          </div>
+        )}
       </main>
 
       <div className="dock-container">
         <nav className="dock">
           <button 
             className={`dock-item ${activeTab === 'about' ? 'active' : ''}`}
-            onClick={() => setActiveTab('about')}
+            onClick={() => { setActiveTab('about'); setIsWindowVisible(true); }}
           >
             <img src="/Profile.png" alt="About" className="dock-icon" />
             <span className="label">About</span>
           </button>
           <button 
             className={`dock-item ${activeTab === 'works' ? 'active' : ''}`}
-            onClick={() => setActiveTab('works')}
+            onClick={() => { setActiveTab('works'); setIsWindowVisible(true); }}
           >
             <img src="/Works.png" alt="Works" className="dock-icon" />
             <span className="label">Works</span>
           </button>
           <button 
             className={`dock-item ${activeTab === 'writings' ? 'active' : ''}`}
-            onClick={() => setActiveTab('writings')}
+            onClick={() => { setActiveTab('writings'); setIsWindowVisible(true); }}
           >
             <img src="/Writings.png" alt="Writings" className="dock-icon" />
             <span className="label">Writings</span>
           </button>
           <button 
             className={`dock-item ${activeTab === 'learning' ? 'active' : ''}`}
-            onClick={() => setActiveTab('learning')}
+            onClick={() => { setActiveTab('learning'); setIsWindowVisible(true); }}
           >
             <img src="/Learnings.png" alt="Learning" className="dock-icon" />
             <span className="label">Learning</span>

@@ -125,26 +125,300 @@ header {
   font-weight: 500;
 }
 
-.content-container {
-  min-height: 40vh;
-  margin-bottom: 4rem;
-  animation: fadeIn 0.6s ease-out;
+.mac-window {
+  max-width: 1000px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  animation: windowFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
+.mac-window.full-screen {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  right: 1rem;
+  bottom: 8rem;
+  max-width: none;
+  z-index: 999;
+  border-radius: 24px;
+}
+
+@keyframes windowFadeIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.window-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: rgba(255, 255, 255, 0.8);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.traffic-lights {
+  display: flex;
+  gap: 8px;
+}
+
+.traffic-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+.traffic-dot span {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.traffic-lights:hover .traffic-dot span {
+  opacity: 1;
+}
+
+.traffic-dot.red { background: #ff5f56; }
+.traffic-dot.yellow { background: #ffbd2e; }
+.traffic-dot.green { background: #27c93f; }
+
+.traffic-dot.red:hover { background: #ff4339; }
+.traffic-dot.yellow:hover { background: #fdb000; }
+.traffic-dot.green:hover { background: #1eb832; }
+
+.header-back-button {
+  background: rgba(0, 0, 0, 0.05);
+  border: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #1e293b;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  margin-left: -4px;
+}
+
+.header-back-button:hover {
+  background: rgba(0, 0, 0, 0.1);
+  transform: translateX(-2px);
+}
+
+.window-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1e293b;
+  opacity: 0.8;
+  letter-spacing: -0.5px;
+}
+
+.window-actions {
+  color: #64748b;
+  font-size: 1.1rem;
+  cursor: pointer;
+  opacity: 0.5;
+}
+
+.window-body {
+  padding: 3rem;
+  max-height: 65vh;
+  overflow-y: auto;
+  scrollbar-width: none; /* Hide scrollbar for cleaner look */
+}
+
+.window-body::-webkit-scrollbar {
+  display: none;
+}
+
+.window-hero-title {
+  font-size: 3.5rem;
+  font-weight: 900;
+  letter-spacing: -3px;
+  color: #000;
+  margin-bottom: 4rem;
+  line-height: 1;
+}
+
+.window-hero-subtitle {
+  font-size: 1.2rem;
+  color: #64748b;
+  margin-bottom: 3.5rem;
+  font-weight: 500;
+}
+
+.folder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 2.5rem 1.5rem;
+  padding: 1rem;
+}
+
+.folder-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  user-select: none;
+}
+
+.folder-item:active {
+  transform: scale(0.95);
+}
+
+.folder-icon-wrapper {
+  width: 112px;
+  height: 100px;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+.folder-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.folder-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #1e293b;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  text-align: center;
+  transition: all 0.2s ease;
+  width: auto;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folder-item:hover .folder-name {
+  background: #0060df;
+  color: white;
+}
+
+.folder-item:hover .folder-icon-wrapper {
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.15));
+}
+
+.project-detail {
+  animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1e293b;
+  cursor: pointer;
+  margin-bottom: 2.5rem;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.back-button:hover {
+  background: rgba(0, 0, 0, 0.1);
+  transform: translateX(-5px);
+}
+
+.project-content {
+  margin-top: 1rem;
+}
+
+.placeholder-hero {
+  width: 100%;
+  height: 400px;
+  border-radius: 24px;
+  overflow: hidden;
+  margin-bottom: 2.5rem;
+  background: #f1f5f9;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.placeholder-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.9;
+  filter: grayscale(100%);
+  transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.placeholder-hero:hover img {
+  filter: grayscale(0%);
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.project-meta {
+  display: flex;
+  justify-content: space-around;
+  padding: 2.5rem;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: center;
+}
+
+.meta-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #94a3b8;
+  font-weight: 800;
+}
+
+.meta-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: -0.5px;
 }
 
 .info-section {
   max-width: 800px;
   margin: 0 auto;
   text-align: center;
-  padding: 2rem;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: 32px;
-  backdrop-filter: blur(20px);
 }
 
 .info-section h2 {
