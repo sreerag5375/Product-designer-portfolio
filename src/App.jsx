@@ -105,9 +105,24 @@ const Portfolio = () => {
               </div>
 
               <div className="platform-links">
-                {folder.links?.website && <a href={folder.links.website} target="_blank" className="link-btn">Website</a>}
-                {folder.links?.playStore && <a href={folder.links.playStore} target="_blank" className="link-btn">Play Store</a>}
-                {folder.links?.appStore && <a href={folder.links.appStore} target="_blank" className="link-btn">App Store</a>}
+                {folder.links?.website && (
+                  <a href={folder.links.website} target="_blank" className="link-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                    Website
+                  </a>
+                )}
+                {folder.links?.playStore && (
+                  <a href={folder.links.playStore} target="_blank" className="link-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5,19.05V4.95a1.2,1.2,0,0,1,1.83-1.03l13.11,7.05a1.2,1.2,0,0,1,0,2.06L6.83,20.08A1.2,1.2,0,0,1,5,19.05Z"/></svg>
+                    Play Store
+                  </a>
+                )}
+                {folder.links?.appStore && (
+                  <a href={folder.links.appStore} target="_blank" className="link-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71,19.5c-.83,1.24-1.71,2.45-3.1,2.48s-1.84-.85-3.44-.85-2.05.83-3.38.88-2.31-1.29-3.14-2.49c-1.69-2.45-2.98-6.93-1.25-9.95s3.59-3.8,5.43-3.8c1.78,0,3,1.06,4,1.06s2.51-1.28,4.6-1.07c.88.04,3.35.32,4.9,2.59-1.39.81-2.33,2.23-2.33,4.09,0,2.15,1.15,3.69,2.81,4.5a13.31,13.31,0,0,1-2.1,3.65ZM15.42,4.38a4.67,4.67,0,0,0,1.23-3.41,4.52,4.52,0,0,0-3.19,1.64,4.28,4.28,0,0,0-1.26,3.19c0,.08.01.16.02.24.16,0,.32.01.48.01a4.23,4.23,0,0,0,2.72-.68Z"/></svg>
+                    App Store
+                  </a>
+                )}
               </div>
               
               <div className="content-section">
@@ -214,10 +229,22 @@ const Portfolio = () => {
       </main>
       <div className="dock-container">
         <nav className="dock">
-          {['about', 'works', 'writings', 'learning'].map(tab => (
-            <button key={tab} className={`dock-item ${activeTab === tab ? 'active' : ''}`} onClick={() => { setActiveTab(tab); setIsWindowVisible(true); }}>
-              <img src={`/${tab.charAt(0).toUpperCase() + tab.slice(1)}.png`} alt={tab} className="dock-icon" />
-              <span className="label">{tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
+          {[
+            { id: 'about', label: 'About', icon: 'Profile.png' },
+            { id: 'works', label: 'Works', icon: 'Works.png' },
+            { id: 'writings', label: 'Writings', icon: 'Writings.png' },
+            { id: 'learning', label: 'Learning', icon: 'Learnings.png' }
+          ].map(item => (
+            <button 
+              key={item.id} 
+              className={`dock-item ${activeTab === item.id ? 'active' : ''}`} 
+              onClick={() => { setActiveTab(item.id); setIsWindowVisible(true); }}
+            >
+              <div className="dock-item-content">
+                <span className="tooltip">{item.label}</span>
+                <img src={`/${item.icon}`} alt={item.label} className="dock-icon" />
+                {activeTab === item.id && <div className="active-dot"></div>}
+              </div>
             </button>
           ))}
         </nav>
@@ -445,6 +472,27 @@ const Admin = () => {
                     <span className="meta-pill">{selectedProject.category}</span>
                   </div>
                 </div>
+              </div>
+
+              <div className="platform-links">
+                {selectedProject.links?.website && (
+                  <a href={selectedProject.links.website} target="_blank" className="link-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                    Website
+                  </a>
+                )}
+                {selectedProject.links?.playStore && (
+                  <a href={selectedProject.links.playStore} target="_blank" className="link-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5,19.05V4.95a1.2,1.2,0,0,1,1.83-1.03l13.11,7.05a1.2,1.2,0,0,1,0,2.06L6.83,20.08A1.2,1.2,0,0,1,5,19.05Z"/></svg>
+                    Play Store
+                  </a>
+                )}
+                {selectedProject.links?.appStore && (
+                  <a href={selectedProject.links.appStore} target="_blank" className="link-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71,19.5c-.83,1.24-1.71,2.45-3.1,2.48s-1.84-.85-3.44-.85-2.05.83-3.38.88-2.31-1.29-3.14-2.49c-1.69-2.45-2.98-6.93-1.25-9.95s3.59-3.8,5.43-3.8c1.78,0,3,1.06,4,1.06s2.51-1.28,4.6-1.07c.88.04,3.35.32,4.9,2.59-1.39.81-2.33,2.23-2.33,4.09,0,2.15,1.15,3.69,2.81,4.5a13.31,13.31,0,0,1-2.1,3.65ZM15.42,4.38a4.67,4.67,0,0,0,1.23-3.41,4.52,4.52,0,0,0-3.19,1.64,4.28,4.28,0,0,0-1.26,3.19c0,.08.01.16.02.24.16,0,.32.01.48.01a4.23,4.23,0,0,0,2.72-.68Z"/></svg>
+                    App Store
+                  </a>
+                )}
               </div>
               
               <div className="content-section">
