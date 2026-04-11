@@ -58,7 +58,7 @@ const renderFormattedText = (text) => {
   return result;
 };
 
-const SortableImageRow = ({ item, sIdx, iIdx, onRemove, onTitleChange }) => {
+const SortableImageRow = ({ item, sIdx, iIdx, onRemove, onTitleChange, onImageChange }) => {
   const {
     attributes,
     listeners,
@@ -67,6 +67,19 @@ const SortableImageRow = ({ item, sIdx, iIdx, onRemove, onTitleChange }) => {
     transition,
     isDragging
   } = useSortable({ id: item.id || item._id || `item-${sIdx}-${iIdx}` });
+
+  const fileInputRef = React.useRef(null);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        onImageChange(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -94,12 +107,163 @@ const SortableImageRow = ({ item, sIdx, iIdx, onRemove, onTitleChange }) => {
           {item.imageUrl ? "Existing Image" : "Newly Uploaded"}
         </div>
       </div>
-      {(item.imageBase64 || item.imageUrl) && (
-        <div className="mini-preview-box">
+      <div className="mini-preview-box" onClick={() => fileInputRef.current?.click()} style={{ cursor: 'pointer' }} title="Click to change image">
+        {(item.imageBase64 || item.imageUrl) ? (
           <img src={item.imageBase64 || item.imageUrl} alt="Thumbnail" />
-        </div>
-      )}
+        ) : (
+          <div className="upload-placeholder-mini">+</div>
+        )}
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          className="hidden-input" 
+          accept="image/*" 
+          onChange={handleFileChange} 
+        />
+      </div>
       <button type="button" className="row-delete" onClick={() => onRemove()}>✕</button>
+    </div>
+  );
+};
+
+const SortableDesignSection = ({ 
+  section, sIdx, onTitleChange, onRemoveSection, handleItemImageUpload, 
+  handleDragEnd, sensors, SortableImageRow, setFormData, formData 
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: section.id || `section-${sIdx}` });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1000 : 1
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className={`form-card-section ${isDragging ? 'dragging-section' : ''}`}>
+      <div className="section-header-modern">
+        <div className="header-top-row">
+          <div className="section-drag-handle" {...attributes} {...listeners}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>
+          </div>
+          <input 
+            type="text" 
+            value={section.title || ''} 
+            placeholder="Section Title (e.g. Design System)" 
+            onChange={e => onTitleChange(e.target.value)} 
+          />
+          <button type="button" className="remove-pill-btn" onClick={onRemoveSection} title="Delete Section">✕</button>
+        </div>
+        
+        <div className="header-actions-row">
+          <div className="bulk-upload-wrapper">
+            <input 
+              type="file" 
+              multiple 
+              accept="image/*" 
+              className="hidden-input" 
+              id={`add-img-${sIdx}`}
+              onChange={(e) => handleItemImageUpload(sIdx, e)} 
+              onClick={(e) => e.stopPropagation()}
+            />
+            <label 
+              htmlFor={`add-img-${sIdx}`} 
+              className="bulk-add-btn primary-btn"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span>🖼️</span> Add Image
+            </label>
+          </div>
+
+          <div className="bulk-upload-wrapper">
+            <input 
+              type="file" 
+              multiple 
+              id={`bulk-${sIdx}`}
+              accept="image/*,.zip" 
+              className="hidden-input" 
+              onChange={(e) => handleItemImageUpload(sIdx, e)} 
+              onClick={(e) => e.stopPropagation()}
+            />
+            <label 
+              htmlFor={`bulk-${sIdx}`} 
+              className="bulk-add-btn"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span>🚀</span> Bulk / ZIP
+            </label>
+          </div>
+
+          <div className="bulk-upload-wrapper">
+            <input 
+              type="file" 
+              webkitdirectory="" 
+              directory="" 
+              multiple 
+              id={`folder-${sIdx}`}
+              className="hidden-input" 
+              onChange={(e) => handleItemImageUpload(sIdx, e)} 
+              onClick={(e) => e.stopPropagation()}
+            />
+            <label 
+              htmlFor={`folder-${sIdx}`} 
+              className="bulk-add-btn"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span>📂</span> Folder
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <DndContext 
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={(event) => handleDragEnd(event, sIdx)}
+      >
+        <SortableContext 
+          items={section.items.map(item => item.id || item._id || `item-${sIdx}-${section.items.indexOf(item)}`)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="nested-item-list">
+            {section.items.map((item, iIdx) => (
+              <SortableImageRow 
+                key={item.id || item._id || `item-${sIdx}-${iIdx}`}
+                item={item}
+                sIdx={sIdx}
+                iIdx={iIdx}
+                onTitleChange={(newTitle) => {
+                  const newSections = [...formData.designSections];
+                  newSections[sIdx].items[iIdx].title = newTitle;
+                  setFormData({ ...formData, designSections: newSections });
+                }}
+                onImageChange={(newBase64) => {
+                  const newSections = [...formData.designSections];
+                  newSections[sIdx].items[iIdx].imageBase64 = newBase64;
+                  setFormData({ ...formData, designSections: newSections });
+                }}
+                onRemove={() => {
+                  const newSections = [...formData.designSections];
+                  newSections[sIdx].items = newSections[sIdx].items.filter((_, i) => i !== iIdx);
+                  setFormData({ ...formData, designSections: newSections });
+                }}
+              />
+            ))}
+            {section.items.length === 0 && (
+              <div className="empty-section-placeholder">
+                No images yet. Use Bulk Upload to add screens.
+              </div>
+            )}
+          </div>
+        </SortableContext>
+      </DndContext>
     </div>
   );
 };
@@ -357,6 +521,15 @@ const Admin = () => {
     designSections: [{ title: '', items: [] }]
   });
   const navigate = useNavigate();
+  const [toast, setToast] = useState({ show: false, type: 'success', message: '', details: '' });
+  const [isQuickModalOpen, setIsQuickModalOpen] = useState(false);
+
+  const showToast = (type, message, details = '') => {
+    setToast({ show: true, type, message, details });
+    if (type === 'success') {
+      setTimeout(() => setToast(prev => ({ ...prev, show: false })), 5000);
+    }
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -364,6 +537,21 @@ const Admin = () => {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  const handleSectionDragEnd = (event) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = formData.designSections.findIndex(s => (s.id || `section-${formData.designSections.indexOf(s)}`) === active.id);
+      const newIndex = formData.designSections.findIndex(s => (s.id || `section-${formData.designSections.indexOf(s)}`) === over.id);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        setFormData({
+          ...formData,
+          designSections: arrayMove(formData.designSections, oldIndex, newIndex)
+        });
+      }
+    }
+  };
 
   const handleDragEnd = (event, sIdx) => {
     const { active, over } = event;
@@ -419,15 +607,37 @@ const Admin = () => {
     setFormData({ ...formData, designSections: newSections });
   };
 
+
+  const compressImage = (base64Str, maxWidth = 1600, quality = 0.7) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = base64Str;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = (maxWidth / width) * height;
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+    });
+  };
+
   const handleItemImageUpload = async (sIdx, e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
-    const newSections = [...formData.designSections];
+    let newSections = [...formData.designSections];
     const section = newSections[sIdx];
-    
-    let folderName = "";
-    const extractedItems = [];
+    const groupedFiles = {};
 
     // Helper to clean titles
     const cleanTitle = (name) => {
@@ -443,66 +653,105 @@ const Admin = () => {
     const processFile = (file) => {
       return new Promise((resolve) => {
         const reader = new FileReader();
-        reader.onloadend = () => {
+        reader.onloadend = async () => {
+          const compressed = await compressImage(reader.result);
           resolve({
             id: Math.random().toString(36).substr(2, 9),
             title: cleanTitle(file.name),
-            imageBase64: reader.result
+            imageBase64: compressed
           });
         };
         reader.readAsDataURL(file);
       });
     };
 
-    // Check if it's a ZIP or a Folder upload
-    const firstFile = files[0];
-    
     // 1. Handle ZIP File
+    const firstFile = files[0];
     if (firstFile.name.endsWith('.zip')) {
       try {
-        folderName = cleanTitle(firstFile.name);
         const zip = await JSZip.loadAsync(firstFile);
-        const imageEntries = [];
-        
-        zip.forEach((relativePath, zipEntry) => {
+        for (const [relativePath, zipEntry] of Object.entries(zip.files)) {
           if (!zipEntry.dir && /\.(png|jpe?g|gif|webp|svg)$/i.test(zipEntry.name)) {
-            imageEntries.push(zipEntry);
+            const parts = relativePath.split('/');
+            const group = parts.length > 1 ? cleanTitle(parts[parts.length - 2]) : "General";
+            if (!groupedFiles[group]) groupedFiles[group] = [];
+            
+            const blob = await zipEntry.async('blob');
+            const file = new File([blob], zipEntry.name, { type: blob.type });
+            const processed = await processFile(file);
+            groupedFiles[group].push(processed);
           }
-        });
-
-        for (const entry of imageEntries) {
-          const blob = await entry.async('blob');
-          const file = new File([blob], entry.name, { type: blob.type });
-          extractedItems.push(await processFile(file));
         }
       } catch (err) {
         console.error("ZIP Error:", err);
-        alert("Failed to read ZIP file.");
+        showToast('error', 'Failed to read ZIP file', err.message);
       }
     } 
-    // 2. Handle Folder Upload (via webkitdirectory)
-    else if (firstFile.webkitRelativePath) {
-      folderName = cleanTitle(firstFile.webkitRelativePath.split('/')[0]);
+    // 2. Handle Folder/Multiple Files Grouping
+    else {
       for (const file of files) {
         if (file.type.startsWith('image/')) {
-          extractedItems.push(await processFile(file));
+          const path = file.webkitRelativePath || "";
+          const parts = path.split('/');
+          const group = parts.length > 1 ? cleanTitle(parts[parts.length - 2]) : null;
+          
+          if (group) {
+            if (!groupedFiles[group]) groupedFiles[group] = [];
+            groupedFiles[group].push(await processFile(file));
+          } else {
+            if (!groupedFiles["_default"]) groupedFiles["_default"] = [];
+            groupedFiles["_default"].push(await processFile(file));
+          }
         }
       }
     }
-    // 3. Normal Bulk Image Upload
-    else {
-      for (const file of files) {
-        extractedItems.push(await processFile(file));
-      }
+
+    // Distribute into sections
+    const groups = Object.keys(groupedFiles);
+    if (groups.length > 0) {
+      groups.forEach((groupName, idx) => {
+        const items = groupedFiles[groupName];
+        if (groupName === "_default" || (idx === 0 && groups.length === 1)) {
+          // Append to current section
+          if (groupName !== "_default" && !newSections[sIdx].title) newSections[sIdx].title = groupName;
+          newSections[sIdx].items = [...newSections[sIdx].items, ...items];
+        } else {
+          // Create new section
+          if (groupName !== "_default") {
+            newSections.push({ title: groupName, items: items, id: Math.random().toString(36).substr(2, 9) });
+          } else {
+            newSections[sIdx].items = [...newSections[sIdx].items, ...items];
+          }
+        }
+      });
     }
 
-    // Update section title if we found a folder/zip name
-    if (folderName && !section.title) {
-      section.title = folderName;
-    }
-
-    section.items = [...section.items, ...extractedItems];
     setFormData({ ...formData, designSections: newSections });
+    if (e.target) e.target.value = '';
+  };
+
+  const handleAddSectionQuickly = (project) => {
+    // 1. Load project into form
+    setFormData({
+      name: project.name || '',
+      description: project.description || '',
+      type: project.type || 'app',
+      category: project.category || '',
+      subtitle: project.subtitle || '',
+      logoBase64: project.logoBase64 || '',
+      links: project.links || { playStore: '', appStore: '', website: '' },
+      designSections: project.designSections || []
+    });
+    setEditingId(project._id);
+    
+    // 2. Add the new section immediately
+    setFormData(prev => ({
+      ...prev,
+      designSections: [...prev.designSections, { title: '', items: [], id: Math.random().toString(36).substr(2, 9) }]
+    }));
+    
+    // 3. Open focused quick modal
+    setIsQuickModalOpen(true);
   };
 
   const handleLogin = (e) => {
@@ -527,7 +776,7 @@ const Admin = () => {
       subtitle: project.subtitle || '',
       logoBase64: project.logoBase64 || '',
       links: project.links || { playStore: '', appStore: '', website: '' },
-      designSections: project.designSections || [{ title: '', items: [{ title: '', imageBase64: '' }] }]
+      designSections: project.designSections || [{ title: '', items: [] }]
     });
     setEditingId(project._id);
     setActiveFormTab('general');
@@ -548,6 +797,7 @@ const Admin = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
+      
       if (res.ok) {
         setIsModalOpen(false);
         setEditingId(null);
@@ -555,12 +805,21 @@ const Admin = () => {
         setFormData({
           name: '', description: '', type: 'app', category: '', subtitle: '', logoBase64: '',
           links: { playStore: '', appStore: '', website: '' },
-          designSections: [{ title: '', items: [{ title: '', imageBase64: '' }] }]
+          designSections: [{ title: '', items: [] }]
         });
         fetchProjects();
+        showToast('success', 'Project saved successfully!', editingId ? 'Changes have been pushed to the database.' : 'A new project has been created.');
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        if (res.status === 413) {
+          showToast('error', 'Payload Too Large', 'The total size of images exceeds the server limit. Try uploading fewer screenshots or lower resolution images.');
+        } else {
+          showToast('error', 'Save Failed', errData.error || 'The server encountered an error while saving. Please try again.');
+        }
       }
     } catch (err) {
       console.error(err);
+      showToast('error', 'Connection Error', 'Failed to reach the server. Please check your internet connection.');
     } finally {
       setIsSubmitting(false);
     }
@@ -676,6 +935,12 @@ const Admin = () => {
                     </div>
                   </div>
                 ))}
+                
+                <div className="quick-add-section-wrapper">
+                  <button type="button" className="add-section-btn" onClick={() => handleAddSectionQuickly(selectedProject)}>
+                    + Add New Design Section
+                  </button>
+                </div>
               </div>
 
               {(selectedProject.links?.website || selectedProject.links?.playStore || selectedProject.links?.appStore) && (
@@ -841,105 +1106,40 @@ const Admin = () => {
                         <p>Group your screenshots into logical sections.</p>
                       </div>
 
-                      {formData.designSections.map((section, sIdx) => (
-                        <div key={sIdx} className="form-card-section">
-                          <div className="section-header-modern">
-                            <div className="header-top-row">
-                              <input 
-                                type="text" 
-                                value={section.title || ''} 
-                                placeholder="Section Title (e.g. Design System)" 
-                                onChange={e => {
-                                  const newSections = [...formData.designSections];
-                                  newSections[sIdx].title = e.target.value;
-                                  setFormData({ ...formData, designSections: newSections });
-                                }} 
-                              />
-                              <button type="button" className="remove-pill-btn" onClick={() => {
+                      <DndContext 
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleSectionDragEnd}
+                      >
+                        <SortableContext 
+                          items={formData.designSections.map((s, idx) => s.id || `section-${idx}`)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          {formData.designSections.map((section, sIdx) => (
+                            <SortableDesignSection 
+                              key={section.id || `section-${sIdx}`}
+                              section={section}
+                              sIdx={sIdx}
+                              formData={formData}
+                              setFormData={setFormData}
+                              handleDragEnd={handleDragEnd}
+                              handleItemImageUpload={handleItemImageUpload}
+                              sensors={sensors}
+                              SortableImageRow={SortableImageRow}
+                              onTitleChange={(newTitle) => {
+                                const newSections = [...formData.designSections];
+                                newSections[sIdx].title = newTitle;
+                                setFormData({ ...formData, designSections: newSections });
+                              }}
+                              onRemoveSection={() => {
                                 const newSections = formData.designSections.filter((_, i) => i !== sIdx);
                                 setFormData({ ...formData, designSections: newSections });
-                              }}>✕</button>
-                            </div>
-                            
-                            <div className="header-actions-row">
-                              <button type="button" className="bulk-add-btn" onClick={() => {
-                                const newSections = [...formData.designSections];
-                                newSections[sIdx].items.push({ id: Math.random().toString(36).substr(2, 9), title: '', imageBase64: '' });
-                                setFormData({ ...formData, designSections: newSections });
-                              }}>
-                                <span>🖼️</span> Add Image
-                              </button>
-
-                              <div className="bulk-upload-wrapper">
-                                <input 
-                                  type="file" 
-                                  id={`bulk-${sIdx}`} 
-                                  multiple 
-                                  accept="image/*,.zip" 
-                                  className="hidden-input" 
-                                  onChange={(e) => handleItemImageUpload(sIdx, e)} 
-                                />
-                                <label htmlFor={`bulk-${sIdx}`} className="bulk-add-btn primary-btn">
-                                  <span>🚀</span> Bulk / ZIP
-                                </label>
-                              </div>
-
-                              <div className="bulk-upload-wrapper">
-                                <input 
-                                  type="file" 
-                                  id={`folder-${sIdx}`} 
-                                  webkitdirectory="" 
-                                  directory="" 
-                                  multiple 
-                                  className="hidden-input" 
-                                  onChange={(e) => handleItemImageUpload(sIdx, e)} 
-                                />
-                                <label htmlFor={`folder-${sIdx}`} className="bulk-add-btn">
-                                  <span>📂</span> Folder
-                                </label>
-                              </div>
-                            </div>
-                          </div>
-
-                          <DndContext 
-                            sensors={sensors}
-                            collisionDetection={closestCenter}
-                            onDragEnd={(event) => handleDragEnd(event, sIdx)}
-                          >
-                            <SortableContext 
-                              items={section.items.map(item => item.id || item._id || `item-${sIdx}-${section.items.indexOf(item)}`)}
-                              strategy={verticalListSortingStrategy}
-                            >
-                              <div className="nested-item-list">
-                                {section.items.map((item, iIdx) => (
-                                  <SortableImageRow 
-                                    key={item.id || item._id || `item-${sIdx}-${iIdx}`}
-                                    item={item}
-                                    sIdx={sIdx}
-                                    iIdx={iIdx}
-                                    onTitleChange={(newTitle) => {
-                                      const newSections = [...formData.designSections];
-                                      newSections[sIdx].items[iIdx].title = newTitle;
-                                      setFormData({ ...formData, designSections: newSections });
-                                    }}
-                                    onRemove={() => {
-                                      const newSections = [...formData.designSections];
-                                      newSections[sIdx].items = newSections[sIdx].items.filter((_, i) => i !== iIdx);
-                                      setFormData({ ...formData, designSections: newSections });
-                                    }}
-                                  />
-                                ))}
-                                {section.items.length === 0 && (
-                                  <div className="empty-section-placeholder">
-                                    No images yet. Use Bulk Upload to add screens.
-                                  </div>
-                                )}
-                              </div>
-                            </SortableContext>
-                          </DndContext>
-                        </div>
-                      ))}
-                      <button type="button" className="add-section-btn" onClick={() => setFormData({ ...formData, designSections: [...formData.designSections, { title: '', items: [{ title: '', imageBase64: '' }] }] })}>
+                              }}
+                            />
+                          ))}
+                        </SortableContext>
+                      </DndContext>
+                      <button type="button" className="add-section-btn" onClick={() => setFormData({ ...formData, designSections: [...formData.designSections, { title: '', items: [] }] })}>
                         + Add New Design Section
                       </button>
                     </div>
@@ -954,6 +1154,64 @@ const Admin = () => {
                 </div>
               </form>
             </div>
+          </div>
+        </div>
+      )}
+
+      {isQuickModalOpen && (
+        <div className="quick-modal-overlay">
+          <div className="quick-modal">
+            <div className="window-header">
+              <div className="window-title">Add New Section to {formData.name}</div>
+              <div className="traffic-lights">
+                <span className="traffic-dot red" onClick={() => setIsQuickModalOpen(false)}><span>✕</span></span>
+              </div>
+            </div>
+            <div className="window-body">
+              <p className="quick-modal-intro">Add your title and screenshots for the new block.</p>
+              <SortableDesignSection 
+                section={formData.designSections[formData.designSections.length - 1]}
+                sIdx={formData.designSections.length - 1}
+                formData={formData}
+                setFormData={setFormData}
+                handleDragEnd={handleDragEnd}
+                handleItemImageUpload={handleItemImageUpload}
+                sensors={sensors}
+                SortableImageRow={SortableImageRow}
+                onTitleChange={(newTitle) => {
+                  const newSections = [...formData.designSections];
+                  newSections[newSections.length - 1].title = newTitle;
+                  setFormData({ ...formData, designSections: newSections });
+                }}
+                onRemoveSection={() => {
+                  setIsQuickModalOpen(false);
+                }}
+              />
+            </div>
+            <div className="quick-modal-footer">
+              <button className="secondary-btn" onClick={() => setIsQuickModalOpen(false)}>Cancel</button>
+              <button className="primary-btn" disabled={isSubmitting} onClick={async (e) => {
+                await handleAddProject(e);
+                setIsQuickModalOpen(false);
+              }}>
+                {isSubmitting ? 'Saving...' : 'Add Section'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast.show && (
+        <div className="snackbar-container">
+          <div className={`snackbar ${toast.type} ${toast.show ? '' : 'exit'}`}>
+            <div className="snackbar-icon">
+              {toast.type === 'success' ? '✅' : '❌'}
+            </div>
+            <div className="snackbar-content">
+              <span className="snackbar-title">{toast.message}</span>
+              {toast.details && <span className="snackbar-details">{toast.details}</span>}
+            </div>
+            <button className="snackbar-close" onClick={() => setToast(prev => ({ ...prev, show: false }))}>✕</button>
           </div>
         </div>
       )}
