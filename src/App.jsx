@@ -3,7 +3,7 @@ import { Routes, Route, useNavigate } from 'react-router-dom';
 
 const renderFormattedText = (text) => {
   if (!text) return null;
-  
+
   const lines = text.split('\n');
   const result = [];
   let currentList = [];
@@ -71,7 +71,7 @@ const Portfolio = () => {
   };
 
   const renderContent = () => {
-    switch(activeTab) {
+    switch (activeTab) {
       case 'about':
         return (
           <section className="info-section">
@@ -113,18 +113,18 @@ const Portfolio = () => {
                 )}
                 {folder.links?.playStore && (
                   <a href={folder.links.playStore} target="_blank" className="link-btn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5,19.05V4.95a1.2,1.2,0,0,1,1.83-1.03l13.11,7.05a1.2,1.2,0,0,1,0,2.06L6.83,20.08A1.2,1.2,0,0,1,5,19.05Z"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5,19.05V4.95a1.2,1.2,0,0,1,1.83-1.03l13.11,7.05a1.2,1.2,0,0,1,0,2.06L6.83,20.08A1.2,1.2,0,0,1,5,19.05Z" /></svg>
                     Play Store
                   </a>
                 )}
                 {folder.links?.appStore && (
                   <a href={folder.links.appStore} target="_blank" className="link-btn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71,19.5c-.83,1.24-1.71,2.45-3.1,2.48s-1.84-.85-3.44-.85-2.05.83-3.38.88-2.31-1.29-3.14-2.49c-1.69-2.45-2.98-6.93-1.25-9.95s3.59-3.8,5.43-3.8c1.78,0,3,1.06,4,1.06s2.51-1.28,4.6-1.07c.88.04,3.35.32,4.9,2.59-1.39.81-2.33,2.23-2.33,4.09,0,2.15,1.15,3.69,2.81,4.5a13.31,13.31,0,0,1-2.1,3.65ZM15.42,4.38a4.67,4.67,0,0,0,1.23-3.41,4.52,4.52,0,0,0-3.19,1.64,4.28,4.28,0,0,0-1.26,3.19c0,.08.01.16.02.24.16,0,.32.01.48.01a4.23,4.23,0,0,0,2.72-.68Z"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71,19.5c-.83,1.24-1.71,2.45-3.1,2.48s-1.84-.85-3.44-.85-2.05.83-3.38.88-2.31-1.29-3.14-2.49c-1.69-2.45-2.98-6.93-1.25-9.95s3.59-3.8,5.43-3.8c1.78,0,3,1.06,4,1.06s2.51-1.28,4.6-1.07c.88.04,3.35.32,4.9,2.59-1.39.81-2.33,2.23-2.33,4.09,0,2.15,1.15,3.69,2.81,4.5a13.31,13.31,0,0,1-2.1,3.65ZM15.42,4.38a4.67,4.67,0,0,0,1.23-3.41,4.52,4.52,0,0,0-3.19,1.64,4.28,4.28,0,0,0-1.26,3.19c0,.08.01.16.02.24.16,0,.32.01.48.01a4.23,4.23,0,0,0,2.72-.68Z" /></svg>
                     App Store
                   </a>
                 )}
               </div>
-              
+
               <div className="content-section">
                 <div className="what-we-like-text">{renderFormattedText(folder.description)}</div>
               </div>
@@ -202,14 +202,26 @@ const Portfolio = () => {
 
   return (
     <div className="app-container">
-      <main onClick={() => setIsWindowVisible(false)}>
+      <main>
         <div className="immersive-bg"></div>
         {isWindowVisible && (
-          <div className={`mac-window ${isFullScreen ? 'full-screen' : ''}`} onClick={(e) => e.stopPropagation()}>
+          <div className={`window-overlay active ${isFullScreen ? 'full-screen-overlay' : ''}`} onClick={() => { setIsWindowVisible(false); setSelectedFolder(null); setIsFullScreen(false); }}>
+            <div className={`mac-window ${isFullScreen ? 'full-screen' : ''}`} onClick={(e) => e.stopPropagation()}>
             <div className="window-header">
               <div className="traffic-lights">
                 {selectedFolder && activeTab === 'works' ? (
-                  <button className="header-back-button" onClick={() => setSelectedFolder(null)}><span>←</span></button>
+                  <div className="header-left-actions">
+                    <button className="header-back-button" onClick={() => setSelectedFolder(null)}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <button className="header-fullscreen-button" onClick={() => setIsFullScreen(!isFullScreen)}>
+                      {isFullScreen ? (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="4" width="12" height="12" rx="1.5"></rect><path d="M4 8v10a2 2 0 0 0 2 2h10"></path></svg>
+                      ) : (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>
+                      )}
+                    </button>
+                  </div>
                 ) : (
                   <>
                     <span className="traffic-dot red" onClick={() => setIsWindowVisible(false)}><span>✕</span></span>
@@ -224,10 +236,12 @@ const Portfolio = () => {
               <div className="window-actions-placeholder" style={{ width: '52px' }}></div>
             </div>
             <div className="window-body">{renderContent()}</div>
+            </div>
           </div>
         )}
       </main>
-      <div className="dock-container">
+      {!isFullScreen && (
+        <div className="dock-container">
         <nav className="dock">
           {[
             { id: 'about', label: 'About', icon: 'Profile.png' },
@@ -235,9 +249,9 @@ const Portfolio = () => {
             { id: 'writings', label: 'Writings', icon: 'Writings.png' },
             { id: 'learning', label: 'Learning', icon: 'Learnings.png' }
           ].map(item => (
-            <button 
-              key={item.id} 
-              className={`dock-item ${activeTab === item.id ? 'active' : ''}`} 
+            <button
+              key={item.id}
+              className={`dock-item ${activeTab === item.id ? 'active' : ''}`}
               onClick={() => { setActiveTab(item.id); setIsWindowVisible(true); }}
             >
               <div className="dock-item-content">
@@ -249,6 +263,7 @@ const Portfolio = () => {
           ))}
         </nav>
       </div>
+      )}
     </div>
   );
 };
@@ -264,10 +279,10 @@ const Admin = () => {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [activeFormTab, setActiveFormTab] = useState('general');
-  const [formData, setFormData] = useState({ 
-    name: '', 
-    description: '', 
-    type: 'app', 
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    type: 'app',
     category: '',
     subtitle: '',
     logoBase64: '',
@@ -300,7 +315,7 @@ const Admin = () => {
     const newSections = [...formData.designSections];
     const items = [...newSections[sIdx].items];
     const targetIdx = direction === 'up' ? iIdx - 1 : iIdx + 1;
-    
+
     // Swap items
     [items[iIdx], items[targetIdx]] = [items[targetIdx], items[iIdx]];
     newSections[sIdx].items = items;
@@ -367,7 +382,7 @@ const Admin = () => {
         setIsModalOpen(false);
         setEditingId(null);
         setActiveFormTab('general');
-        setFormData({ 
+        setFormData({
           name: '', description: '', type: 'app', category: '', subtitle: '', logoBase64: '',
           links: { playStore: '', appStore: '', website: '' },
           designSections: [{ title: '', items: [{ title: '', imageBase64: '' }] }]
@@ -383,7 +398,7 @@ const Admin = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) return;
-    
+
     try {
       const res = await fetch('/api/projects', {
         method: 'DELETE',
@@ -428,7 +443,9 @@ const Admin = () => {
         <div className="window-header">
           <div className="traffic-lights">
             {selectedFolderId ? (
-              <button className="header-back-button" onClick={() => setSelectedFolderId(null)}><span>←</span></button>
+              <button className="header-back-button" onClick={() => setSelectedFolderId(null)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg>
+              </button>
             ) : (
               <span className="traffic-dot red" onClick={() => navigate('/')}><span>✕</span></span>
             )}
@@ -448,7 +465,7 @@ const Admin = () => {
           ) : (
             <button className="add-project-btn" onClick={() => {
               setEditingId(null);
-              setFormData({ 
+              setFormData({
                 name: '', description: '', type: 'app', category: '', subtitle: '', logoBase64: '',
                 links: { playStore: '', appStore: '', website: '' },
                 designSections: [{ title: '', items: [{ title: '', imageBase64: '' }] }]
@@ -483,18 +500,18 @@ const Admin = () => {
                 )}
                 {selectedProject.links?.playStore && (
                   <a href={selectedProject.links.playStore} target="_blank" className="link-btn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5,19.05V4.95a1.2,1.2,0,0,1,1.83-1.03l13.11,7.05a1.2,1.2,0,0,1,0,2.06L6.83,20.08A1.2,1.2,0,0,1,5,19.05Z"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5,19.05V4.95a1.2,1.2,0,0,1,1.83-1.03l13.11,7.05a1.2,1.2,0,0,1,0,2.06L6.83,20.08A1.2,1.2,0,0,1,5,19.05Z" /></svg>
                     Play Store
                   </a>
                 )}
                 {selectedProject.links?.appStore && (
                   <a href={selectedProject.links.appStore} target="_blank" className="link-btn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71,19.5c-.83,1.24-1.71,2.45-3.1,2.48s-1.84-.85-3.44-.85-2.05.83-3.38.88-2.31-1.29-3.14-2.49c-1.69-2.45-2.98-6.93-1.25-9.95s3.59-3.8,5.43-3.8c1.78,0,3,1.06,4,1.06s2.51-1.28,4.6-1.07c.88.04,3.35.32,4.9,2.59-1.39.81-2.33,2.23-2.33,4.09,0,2.15,1.15,3.69,2.81,4.5a13.31,13.31,0,0,1-2.1,3.65ZM15.42,4.38a4.67,4.67,0,0,0,1.23-3.41,4.52,4.52,0,0,0-3.19,1.64,4.28,4.28,0,0,0-1.26,3.19c0,.08.01.16.02.24.16,0,.32.01.48.01a4.23,4.23,0,0,0,2.72-.68Z"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71,19.5c-.83,1.24-1.71,2.45-3.1,2.48s-1.84-.85-3.44-.85-2.05.83-3.38.88-2.31-1.29-3.14-2.49c-1.69-2.45-2.98-6.93-1.25-9.95s3.59-3.8,5.43-3.8c1.78,0,3,1.06,4,1.06s2.51-1.28,4.6-1.07c.88.04,3.35.32,4.9,2.59-1.39.81-2.33,2.23-2.33,4.09,0,2.15,1.15,3.69,2.81,4.5a13.31,13.31,0,0,1-2.1,3.65ZM15.42,4.38a4.67,4.67,0,0,0,1.23-3.41,4.52,4.52,0,0,0-3.19,1.64,4.28,4.28,0,0,0-1.26,3.19c0,.08.01.16.02.24.16,0,.32.01.48.01a4.23,4.23,0,0,0,2.72-.68Z" /></svg>
                     App Store
                   </a>
                 )}
               </div>
-              
+
               <div className="content-section">
                 <div className="what-we-like-text">{renderFormattedText(selectedProject.description)}</div>
               </div>
@@ -549,12 +566,12 @@ const Admin = () => {
                     <div className="tab-pane animate-in">
                       <div className="form-group">
                         <label>Project Name</label>
-                        <input type="text" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} required placeholder="Enter project name" />
+                        <input type="text" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} required placeholder="Enter project name" />
                       </div>
                       <div className="form-row">
                         <div className="form-group flex-1">
                           <label>Type</label>
-                          <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
+                          <select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value })}>
                             <option value="app">Mobile App</option>
                             <option value="website">Website</option>
                             <option value="webapp">Web Application</option>
@@ -562,12 +579,12 @@ const Admin = () => {
                         </div>
                         <div className="form-group flex-1">
                           <label>Category</label>
-                          <input type="text" value={formData.category || ''} onChange={e => setFormData({...formData, category: e.target.value})} required placeholder="e.g. Fintech" />
+                          <input type="text" value={formData.category || ''} onChange={e => setFormData({ ...formData, category: e.target.value })} required placeholder="e.g. Fintech" />
                         </div>
                       </div>
                       <div className="form-group">
                         <label>Subtitle (Tagline)</label>
-                        <input type="text" value={formData.subtitle || ''} onChange={e => setFormData({...formData, subtitle: e.target.value})} placeholder="Short catchphrase" />
+                        <input type="text" value={formData.subtitle || ''} onChange={e => setFormData({ ...formData, subtitle: e.target.value })} placeholder="Short catchphrase" />
                       </div>
                       <div className="form-group">
                         <label>Logo</label>
@@ -599,15 +616,15 @@ const Admin = () => {
                       </div>
                       <div className="form-group">
                         <label>Official Website URL</label>
-                        <input type="text" value={formData.links?.website || ''} onChange={e => setFormData({...formData, links: {...formData.links, website: e.target.value}})} placeholder="https://..." />
+                        <input type="text" value={formData.links?.website || ''} onChange={e => setFormData({ ...formData, links: { ...formData.links, website: e.target.value } })} placeholder="https://..." />
                       </div>
                       <div className="form-group">
                         <label>Google Play Store URL</label>
-                        <input type="text" value={formData.links?.playStore || ''} onChange={e => setFormData({...formData, links: {...formData.links, playStore: e.target.value}})} placeholder="https://..." />
+                        <input type="text" value={formData.links?.playStore || ''} onChange={e => setFormData({ ...formData, links: { ...formData.links, playStore: e.target.value } })} placeholder="https://..." />
                       </div>
                       <div className="form-group">
                         <label>Apple App Store URL</label>
-                        <input type="text" value={formData.links?.appStore || ''} onChange={e => setFormData({...formData, links: {...formData.links, appStore: e.target.value}})} placeholder="https://..." />
+                        <input type="text" value={formData.links?.appStore || ''} onChange={e => setFormData({ ...formData, links: { ...formData.links, appStore: e.target.value } })} placeholder="https://..." />
                       </div>
                     </div>
                   )}
@@ -616,7 +633,7 @@ const Admin = () => {
                     <div className="tab-pane animate-in">
                       <div className="form-group">
                         <label>Description (Rich Project Narrative)</label>
-                        <textarea className="desc-textarea" value={formData.description || ''} onChange={e => setFormData({...formData, description: e.target.value})} required placeholder="Explain the problem you solved..." />
+                        <textarea className="desc-textarea" value={formData.description || ''} onChange={e => setFormData({ ...formData, description: e.target.value })} required placeholder="Explain the problem you solved..." />
                       </div>
 
                       <div className="content-divider"></div>
@@ -631,11 +648,11 @@ const Admin = () => {
                             <input type="text" value={section.title || ''} placeholder="Section Title (e.g. Design System)" onChange={e => {
                               const newSections = [...formData.designSections];
                               newSections[sIdx].title = e.target.value;
-                              setFormData({...formData, designSections: newSections});
+                              setFormData({ ...formData, designSections: newSections });
                             }} />
                             <button type="button" className="remove-pill-btn" onClick={() => {
                               const newSections = formData.designSections.filter((_, i) => i !== sIdx);
-                              setFormData({...formData, designSections: newSections});
+                              setFormData({ ...formData, designSections: newSections });
                             }}>✕</button>
                           </div>
 
@@ -650,7 +667,7 @@ const Admin = () => {
                                   <input type="text" placeholder="Image Title" value={item.title || ''} onChange={e => {
                                     const newSections = [...formData.designSections];
                                     newSections[sIdx].items[iIdx].title = e.target.value;
-                                    setFormData({...formData, designSections: newSections});
+                                    setFormData({ ...formData, designSections: newSections });
                                   }} />
                                   <div className="mini-upload">
                                     <input type="file" id={`file-${sIdx}-${iIdx}`} accept="image/*" className="hidden-input" onChange={e => handleItemImageUpload(sIdx, iIdx, e)} />
@@ -667,19 +684,19 @@ const Admin = () => {
                                 <button type="button" className="row-delete" onClick={() => {
                                   const newSections = [...formData.designSections];
                                   newSections[sIdx].items = newSections[sIdx].items.filter((_, i) => i !== iIdx);
-                                  setFormData({...formData, designSections: newSections});
+                                  setFormData({ ...formData, designSections: newSections });
                                 }}>✕</button>
                               </div>
                             ))}
                             <button type="button" className="add-nested-btn" onClick={() => {
                               const newSections = [...formData.designSections];
                               newSections[sIdx].items.push({ title: '', imageBase64: '' });
-                              setFormData({...formData, designSections: newSections});
+                              setFormData({ ...formData, designSections: newSections });
                             }}>+ Add Image to "{section.title || 'Section'}"</button>
                           </div>
                         </div>
                       ))}
-                      <button type="button" className="add-section-btn" onClick={() => setFormData({...formData, designSections: [...formData.designSections, { title: '', items: [{ title: '', imageBase64: '' }] }]})}>
+                      <button type="button" className="add-section-btn" onClick={() => setFormData({ ...formData, designSections: [...formData.designSections, { title: '', items: [{ title: '', imageBase64: '' }] }] })}>
                         + Add New Design Section
                       </button>
                     </div>
