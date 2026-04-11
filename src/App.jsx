@@ -326,7 +326,7 @@ const Portfolio = () => {
               {folder.designSections?.map((section, sIdx) => (
                 <div key={sIdx} className="content-section">
                   <h2 className="section-label">{section.title}</h2>
-                  <div className="screenshots-tray">
+                  <div className={`screenshots-tray ${(folder.type === 'website' || folder.type === 'webapp') ? 'is-web' : ''}`}>
                     {section.items?.map((item, iIdx) => (
                       <div key={iIdx} className="screen-card">
                         <img src={item.imageBase64} alt={item.title} className="screen-shot" />
@@ -925,7 +925,7 @@ const Admin = () => {
                 {selectedProject.designSections?.map((section, sIdx) => (
                   <div key={sIdx} className="content-section">
                     <h2 className="section-label">{section.title}</h2>
-                    <div className="screenshots-tray">
+                    <div className={`screenshots-tray ${(selectedProject.type === 'website' || selectedProject.type === 'webapp') ? 'is-web' : ''}`}>
                       {section.items?.map((item, iIdx) => (
                         <div key={iIdx} className="screen-card">
                           <img src={item.imageBase64 || item.imageUrl} alt={item.title} className="screen-shot" />
