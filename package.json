@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@dotlottie/react-player": "^1.6.19",
     "cors": "^2.8.6",
     "dotenv": "^17.4.1",
     "mongoose": "^9.4.1",

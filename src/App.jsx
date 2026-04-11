@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
+import { DotLottiePlayer } from '@dotlottie/react-player';
 
 const renderFormattedText = (text) => {
   if (!text) return null;
@@ -104,27 +105,6 @@ const Portfolio = () => {
                 </div>
               </div>
 
-              <div className="platform-links">
-                {folder.links?.website && (
-                  <a href={folder.links.website} target="_blank" className="link-btn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                    Website
-                  </a>
-                )}
-                {folder.links?.playStore && (
-                  <a href={folder.links.playStore} target="_blank" className="link-btn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5,19.05V4.95a1.2,1.2,0,0,1,1.83-1.03l13.11,7.05a1.2,1.2,0,0,1,0,2.06L6.83,20.08A1.2,1.2,0,0,1,5,19.05Z" /></svg>
-                    Play Store
-                  </a>
-                )}
-                {folder.links?.appStore && (
-                  <a href={folder.links.appStore} target="_blank" className="link-btn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71,19.5c-.83,1.24-1.71,2.45-3.1,2.48s-1.84-.85-3.44-.85-2.05.83-3.38.88-2.31-1.29-3.14-2.49c-1.69-2.45-2.98-6.93-1.25-9.95s3.59-3.8,5.43-3.8c1.78,0,3,1.06,4,1.06s2.51-1.28,4.6-1.07c.88.04,3.35.32,4.9,2.59-1.39.81-2.33,2.23-2.33,4.09,0,2.15,1.15,3.69,2.81,4.5a13.31,13.31,0,0,1-2.1,3.65ZM15.42,4.38a4.67,4.67,0,0,0,1.23-3.41,4.52,4.52,0,0,0-3.19,1.64,4.28,4.28,0,0,0-1.26,3.19c0,.08.01.16.02.24.16,0,.32.01.48.01a4.23,4.23,0,0,0,2.72-.68Z" /></svg>
-                    App Store
-                  </a>
-                )}
-              </div>
-
               <div className="content-section">
                 <div className="what-we-like-text">{renderFormattedText(folder.description)}</div>
               </div>
@@ -142,6 +122,48 @@ const Portfolio = () => {
                   </div>
                 </div>
               ))}
+
+              {(folder.links?.website || folder.links?.playStore || folder.links?.appStore) && (
+                <div className="project-footer-links">
+                  <div className="footer-divider"></div>
+                  <span className="footer-section-label">LIVE NOW</span>
+                  <div className="platform-links">
+                    {folder.links?.website && (
+                      <a href={folder.links.website} target="_blank" className="link-btn">
+                        <div className="link-icon">
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                        </div>
+                        <div className="link-text">
+                          <span className="link-label">VISIT OFFICIAL</span>
+                          <span className="link-brand">Website</span>
+                        </div>
+                      </a>
+                    )}
+                    {folder.links?.playStore && (
+                      <a href={folder.links.playStore} target="_blank" className="link-btn">
+                        <div className="link-icon">
+                          <svg width="24" height="24" viewBox="0 0 24 24"><path d="M3 20.5V3.5C3 2.91 3.34 2.39 3.84 2.15L13.69 12L3.84 21.85C3.34 21.61 3 21.09 3 20.5Z" fill="#00E676"/><path d="M16.92 15.23L13.69 12L16.92 8.77L20.56 10.85C21.41 11.34 21.41 12.67 20.56 13.15L16.92 15.23Z" fill="#F44336"/><path d="M13.69 12L3.84 2.15C4.01 2.07 4.2 2.03 4.41 2.03C4.73 2.03 5.04 2.11 5.31 2.27L16.92 8.77L13.69 12Z" fill="#2196F3"/><path d="M13.69 12L16.92 15.23L5.31 21.73C5.04 21.89 4.73 21.97 4.41 21.97C4.2 21.97 4.01 21.93 3.84 21.85L13.69 12Z" fill="#FFC107"/></svg>
+                        </div>
+                        <div className="link-text">
+                          <span className="link-label">GET IT ON</span>
+                          <span className="link-brand">Google Play</span>
+                        </div>
+                      </a>
+                    )}
+                    {folder.links?.appStore && (
+                      <a href={folder.links.appStore} target="_blank" className="link-btn">
+                        <div className="link-icon">
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71,19.5c-.83,1.24-1.71,2.45-3.1,2.48s-1.84-.85-3.44-.85-2.05.83-3.38.88-2.31-1.29-3.14-2.49c-1.69-2.45-2.98-6.93-1.25-9.95s3.59-3.8,5.43-3.8c1.78,0,3,1.06,4,1.06s2.51-1.28,4.6-1.07c.88.04,3.35.32,4.9,2.59-1.39.81-2.33,2.23-2.33,4.09,0,2.15,1.15,3.69,2.81,4.5a13.31,13.31,0,0,1-2.1,3.65ZM15.42,4.38a4.67,4.67,0,0,0,1.23-3.41,4.52,4.52,0,0,0-3.19,1.64,4.28,4.28,0,0,0-1.26,3.19c0,.08.01.16.02.24.16,0,.32.01.48.01a4.23,4.23,0,0,0,2.72-.68Z" /></svg>
+                        </div>
+                        <div className="link-text">
+                          <span className="link-label">Download on the</span>
+                          <span className="link-brand">App Store</span>
+                        </div>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           );
         }
@@ -172,28 +194,22 @@ const Portfolio = () => {
             </div>
           </>
         );
+      case 'about':
       case 'writings':
-        return (
-          <section className="info-section">
-            <h2>My Writings</h2>
-            <div className="writing-list">
-              <div className="writing-item">
-                <span className="date">Oct 2023</span>
-                <h3>The Future of Spatial Computing</h3>
-                <p>Exploring how visionOS is changing the way we perceive digital depth.</p>
-              </div>
-            </div>
-          </section>
-        );
       case 'learning':
         return (
-          <section className="info-section">
-            <h2>Learning Resources</h2>
-            <div className="resource-grid">
-              <div className="resource-tag">Figma Foundations</div>
-              <div className="resource-tag">React for Designers</div>
+          <div className="cooking-container animate-in">
+            <div className="lottie-wrap">
+              <DotLottiePlayer
+                src="/Nap Emoji.lottie"
+                autoplay
+                loop
+                style={{ width: '220px', height: '220px' }}
+              />
             </div>
-          </section>
+            <h1 className="cooking-title">Still cooking…</h1>
+            <p className="cooking-desc">This section is taking a nap. I’ll wake it up soon.</p>
+          </div>
         );
       default:
         return null;
@@ -491,44 +507,64 @@ const Admin = () => {
                 </div>
               </div>
 
-              <div className="platform-links">
-                {selectedProject.links?.website && (
-                  <a href={selectedProject.links.website} target="_blank" className="link-btn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                    Website
-                  </a>
-                )}
-                {selectedProject.links?.playStore && (
-                  <a href={selectedProject.links.playStore} target="_blank" className="link-btn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5,19.05V4.95a1.2,1.2,0,0,1,1.83-1.03l13.11,7.05a1.2,1.2,0,0,1,0,2.06L6.83,20.08A1.2,1.2,0,0,1,5,19.05Z" /></svg>
-                    Play Store
-                  </a>
-                )}
-                {selectedProject.links?.appStore && (
-                  <a href={selectedProject.links.appStore} target="_blank" className="link-btn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71,19.5c-.83,1.24-1.71,2.45-3.1,2.48s-1.84-.85-3.44-.85-2.05.83-3.38.88-2.31-1.29-3.14-2.49c-1.69-2.45-2.98-6.93-1.25-9.95s3.59-3.8,5.43-3.8c1.78,0,3,1.06,4,1.06s2.51-1.28,4.6-1.07c.88.04,3.35.32,4.9,2.59-1.39.81-2.33,2.23-2.33,4.09,0,2.15,1.15,3.69,2.81,4.5a13.31,13.31,0,0,1-2.1,3.65ZM15.42,4.38a4.67,4.67,0,0,0,1.23-3.41,4.52,4.52,0,0,0-3.19,1.64,4.28,4.28,0,0,0-1.26,3.19c0,.08.01.16.02.24.16,0,.32.01.48.01a4.23,4.23,0,0,0,2.72-.68Z" /></svg>
-                    App Store
-                  </a>
-                )}
-              </div>
-
               <div className="content-section">
                 <div className="what-we-like-text">{renderFormattedText(selectedProject.description)}</div>
+                {selectedProject.designSections?.map((section, sIdx) => (
+                  <div key={sIdx} className="content-section">
+                    <h2 className="section-label">{section.title}</h2>
+                    <div className="screenshots-tray">
+                      {section.items?.map((item, iIdx) => (
+                        <div key={iIdx} className="screen-card">
+                          <img src={item.imageBase64 || item.imageUrl} alt={item.title} className="screen-shot" />
+                          <span className="screen-title">{item.title}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              {selectedProject.designSections?.map((section, sIdx) => (
-                <div key={sIdx} className="content-section">
-                  <h2 className="section-label">{section.title}</h2>
-                  <div className="screenshots-tray">
-                    {section.items?.map((item, iIdx) => (
-                      <div key={iIdx} className="screen-card">
-                        <img src={item.imageBase64 || item.imageUrl} alt={item.title} className="screen-shot" />
-                        <span className="screen-title">{item.title}</span>
-                      </div>
-                    ))}
+              {(selectedProject.links?.website || selectedProject.links?.playStore || selectedProject.links?.appStore) && (
+                <div className="project-footer-links">
+                  <div className="footer-divider"></div>
+                  <span className="footer-section-label">LIVE NOW</span>
+                  <div className="platform-links">
+                    {selectedProject.links?.website && (
+                      <a href={selectedProject.links.website} target="_blank" className="link-btn">
+                        <div className="link-icon">
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                        </div>
+                        <div className="link-text">
+                          <span className="link-label">VISIT OFFICIAL</span>
+                          <span className="link-brand">Website</span>
+                        </div>
+                      </a>
+                    )}
+                    {selectedProject.links?.playStore && (
+                      <a href={selectedProject.links.playStore} target="_blank" className="link-btn">
+                        <div className="link-icon">
+                          <svg width="24" height="24" viewBox="0 0 24 24"><path d="M3 20.5V3.5C3 2.91 3.34 2.39 3.84 2.15L13.69 12L3.84 21.85C3.34 21.61 3 21.09 3 20.5Z" fill="#00E676"/><path d="M16.92 15.23L13.69 12L16.92 8.77L20.56 10.85C21.41 11.34 21.41 12.67 20.56 13.15L16.92 15.23Z" fill="#F44336"/><path d="M13.69 12L3.84 2.15C4.01 2.07 4.2 2.03 4.41 2.03C4.73 2.03 5.04 2.11 5.31 2.27L16.92 8.77L13.69 12Z" fill="#2196F3"/><path d="M13.69 12L16.92 15.23L5.31 21.73C5.04 21.89 4.73 21.97 4.41 21.97C4.2 21.97 4.01 21.93 3.84 21.85L13.69 12Z" fill="#FFC107"/></svg>
+                        </div>
+                        <div className="link-text">
+                          <span className="link-label">GET IT ON</span>
+                          <span className="link-brand">Google Play</span>
+                        </div>
+                      </a>
+                    )}
+                    {selectedProject.links?.appStore && (
+                      <a href={selectedProject.links.appStore} target="_blank" className="link-btn">
+                        <div className="link-icon">
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71,19.5c-.83,1.24-1.71,2.45-3.1,2.48s-1.84-.85-3.44-.85-2.05.83-3.38.88-2.31-1.29-3.14-2.49c-1.69-2.45-2.98-6.93-1.25-9.95s3.59-3.8,5.43-3.8c1.78,0,3,1.06,4,1.06s2.51-1.28,4.6-1.07c.88.04,3.35.32,4.9,2.59-1.39.81-2.33,2.23-2.33,4.09,0,2.15,1.15,3.69,2.81,4.5a13.31,13.31,0,0,1-2.1,3.65ZM15.42,4.38a4.67,4.67,0,0,0,1.23-3.41,4.52,4.52,0,0,0-3.19,1.64,4.28,4.28,0,0,0-1.26,3.19c0,.08.01.16.02.24.16,0,.32.01.48.01a4.23,4.23,0,0,0,2.72-.68Z" /></svg>
+                        </div>
+                        <div className="link-text">
+                          <span className="link-label">Download on the</span>
+                          <span className="link-brand">App Store</span>
+                        </div>
+                      </a>
+                    )}
                   </div>
                 </div>
-              ))}
+              )}
             </div>
           ) : (
             <>
