@@ -1,6 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { DotLottiePlayer } from '@dotlottie/react-player';
+import JSZip from 'jszip';
+import {
+  DndContext, 
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const renderFormattedText = (text) => {
   if (!text) return null;
@@ -41,6 +58,52 @@ const renderFormattedText = (text) => {
   return result;
 };
 
+const SortableImageRow = ({ item, sIdx, iIdx, onRemove, onTitleChange }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: item.id || item._id || `item-${sIdx}-${iIdx}` });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 100 : 1,
+    opacity: isDragging ? 0.6 : 1,
+    position: 'relative'
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className={`modern-item-row ${isDragging ? 'dragging' : ''}`}>
+      <div className="row-controls" {...attributes} {...listeners}>
+        <div className="drag-handle">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>
+        </div>
+      </div>
+      <div className="row-inputs">
+        <input 
+          type="text" 
+          placeholder="Image Title" 
+          value={item.title || ''} 
+          onChange={(e) => onTitleChange(e.target.value)}
+        />
+        <div className="item-meta-info">
+          {item.imageUrl ? "Existing Image" : "Newly Uploaded"}
+        </div>
+      </div>
+      {(item.imageBase64 || item.imageUrl) && (
+        <div className="mini-preview-box">
+          <img src={item.imageBase64 || item.imageUrl} alt="Thumbnail" />
+        </div>
+      )}
+      <button type="button" className="row-delete" onClick={() => onRemove()}>✕</button>
+    </div>
+  );
+};
+
 const Portfolio = () => {
   const [activeTab, setActiveTab] = useState('works');
   const [isWindowVisible, setIsWindowVisible] = useState(true);
@@ -73,19 +136,6 @@ const Portfolio = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'about':
-        return (
-          <section className="info-section">
-            <h1 className="window-hero-title">Product Designer</h1>
-            <p className="window-hero-subtitle">Visionary systems. Human-centric depth. Immersive details.</p>
-            <h2>About Me</h2>
-            <p>I am a visionary product designer focusing on the intersection of human psychology and high-fidelity interfaces. My mission is to build products that feel invisible yet indispensable.</p>
-            <div className="bio-stats">
-              <div className="stat"><span>8+</span> Years Exp</div>
-              <div className="stat"><span>40+</span> Shipped</div>
-            </div>
-          </section>
-        );
       case 'works':
         if (selectedFolder) {
           const folder = projects.find(f => f._id === selectedFolder);
@@ -293,6 +343,7 @@ const Admin = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [activeFormTab, setActiveFormTab] = useState('general');
   const [formData, setFormData] = useState({
@@ -303,18 +354,48 @@ const Admin = () => {
     subtitle: '',
     logoBase64: '',
     links: { playStore: '', appStore: '', website: '' },
-    designSections: [{ title: '', items: [{ title: '', imageBase64: '' }] }]
+    designSections: [{ title: '', items: [] }]
   });
   const navigate = useNavigate();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event, sIdx) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const newSections = [...formData.designSections];
+      const items = [...newSections[sIdx].items];
+      
+      const oldIndex = items.findIndex(item => (item.id || item._id || `item-${sIdx}-${items.indexOf(item)}`) === active.id);
+      const newIndex = items.findIndex(item => (item.id || item._id || `item-${sIdx}-${items.indexOf(item)}`) === over.id);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        newSections[sIdx].items = arrayMove(items, oldIndex, newIndex);
+        setFormData({ ...formData, designSections: newSections });
+      }
+    }
+  };
 
   useEffect(() => {
     if (isAuthenticated) fetchProjects();
   }, [isAuthenticated]);
 
   const fetchProjects = async () => {
-    const res = await fetch('/api/projects');
-    const data = await res.json();
-    setProjects(data);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/projects');
+      const data = await res.json();
+      setProjects(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setTimeout(() => setLoading(false), 800);
+    }
   };
   const handleLogoUpload = (e) => {
     const file = e.target.files[0];
@@ -338,17 +419,90 @@ const Admin = () => {
     setFormData({ ...formData, designSections: newSections });
   };
 
-  const handleItemImageUpload = (sIdx, iIdx, e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const newSections = [...formData.designSections];
-        newSections[sIdx].items[iIdx].imageBase64 = reader.result;
-        setFormData({ ...formData, designSections: newSections });
-      };
-      reader.readAsDataURL(file);
+  const handleItemImageUpload = async (sIdx, e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    const newSections = [...formData.designSections];
+    const section = newSections[sIdx];
+    
+    let folderName = "";
+    const extractedItems = [];
+
+    // Helper to clean titles
+    const cleanTitle = (name) => {
+      return name
+        .replace(/\.[^/.]+$/, "") 
+        .replace(/[_-]/g, " ")     
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    };
+
+    const processFile = (file) => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve({
+            id: Math.random().toString(36).substr(2, 9),
+            title: cleanTitle(file.name),
+            imageBase64: reader.result
+          });
+        };
+        reader.readAsDataURL(file);
+      });
+    };
+
+    // Check if it's a ZIP or a Folder upload
+    const firstFile = files[0];
+    
+    // 1. Handle ZIP File
+    if (firstFile.name.endsWith('.zip')) {
+      try {
+        folderName = cleanTitle(firstFile.name);
+        const zip = await JSZip.loadAsync(firstFile);
+        const imageEntries = [];
+        
+        zip.forEach((relativePath, zipEntry) => {
+          if (!zipEntry.dir && /\.(png|jpe?g|gif|webp|svg)$/i.test(zipEntry.name)) {
+            imageEntries.push(zipEntry);
+          }
+        });
+
+        for (const entry of imageEntries) {
+          const blob = await entry.async('blob');
+          const file = new File([blob], entry.name, { type: blob.type });
+          extractedItems.push(await processFile(file));
+        }
+      } catch (err) {
+        console.error("ZIP Error:", err);
+        alert("Failed to read ZIP file.");
+      }
+    } 
+    // 2. Handle Folder Upload (via webkitdirectory)
+    else if (firstFile.webkitRelativePath) {
+      folderName = cleanTitle(firstFile.webkitRelativePath.split('/')[0]);
+      for (const file of files) {
+        if (file.type.startsWith('image/')) {
+          extractedItems.push(await processFile(file));
+        }
+      }
     }
+    // 3. Normal Bulk Image Upload
+    else {
+      for (const file of files) {
+        extractedItems.push(await processFile(file));
+      }
+    }
+
+    // Update section title if we found a folder/zip name
+    if (folderName && !section.title) {
+      section.title = folderName;
+    }
+
+    section.items = [...section.items, ...extractedItems];
+    setFormData({ ...formData, designSections: newSections });
   };
 
   const handleLogin = (e) => {
@@ -570,12 +724,21 @@ const Admin = () => {
             <>
               <h1 className="window-hero-title">Your Projects</h1>
               <div className="folder-grid">
-                {projects.map(p => (
-                  <div key={p._id} className="folder-item" onClick={() => setSelectedFolderId(p._id)}>
-                    <div className="folder-icon-wrapper"><img src="/folder.png" className="folder-img" /></div>
-                    <span className="folder-name">{p.name}</span>
-                  </div>
-                ))}
+                {loading ? (
+                  [1, 2, 3, 4, 5, 6].map(i => (
+                    <div key={i} className="folder-item skeleton-item">
+                      <div className="folder-icon-wrapper skeleton"></div>
+                      <div className="skeleton-text"></div>
+                    </div>
+                  ))
+                ) : (
+                  projects.map(p => (
+                    <div key={p._id} className="folder-item" onClick={() => setSelectedFolderId(p._id)}>
+                      <div className="folder-icon-wrapper"><img src="/folder.png" className="folder-img" /></div>
+                      <span className="folder-name">{p.name}</span>
+                    </div>
+                  ))
+                )}
               </div>
             </>
           )}
@@ -680,56 +843,100 @@ const Admin = () => {
 
                       {formData.designSections.map((section, sIdx) => (
                         <div key={sIdx} className="form-card-section">
-                          <div className="section-header-pill">
-                            <input type="text" value={section.title || ''} placeholder="Section Title (e.g. Design System)" onChange={e => {
-                              const newSections = [...formData.designSections];
-                              newSections[sIdx].title = e.target.value;
-                              setFormData({ ...formData, designSections: newSections });
-                            }} />
-                            <button type="button" className="remove-pill-btn" onClick={() => {
-                              const newSections = formData.designSections.filter((_, i) => i !== sIdx);
-                              setFormData({ ...formData, designSections: newSections });
-                            }}>✕</button>
+                          <div className="section-header-modern">
+                            <div className="header-top-row">
+                              <input 
+                                type="text" 
+                                value={section.title || ''} 
+                                placeholder="Section Title (e.g. Design System)" 
+                                onChange={e => {
+                                  const newSections = [...formData.designSections];
+                                  newSections[sIdx].title = e.target.value;
+                                  setFormData({ ...formData, designSections: newSections });
+                                }} 
+                              />
+                              <button type="button" className="remove-pill-btn" onClick={() => {
+                                const newSections = formData.designSections.filter((_, i) => i !== sIdx);
+                                setFormData({ ...formData, designSections: newSections });
+                              }}>✕</button>
+                            </div>
+                            
+                            <div className="header-actions-row">
+                              <button type="button" className="bulk-add-btn" onClick={() => {
+                                const newSections = [...formData.designSections];
+                                newSections[sIdx].items.push({ id: Math.random().toString(36).substr(2, 9), title: '', imageBase64: '' });
+                                setFormData({ ...formData, designSections: newSections });
+                              }}>
+                                <span>🖼️</span> Add Image
+                              </button>
+
+                              <div className="bulk-upload-wrapper">
+                                <input 
+                                  type="file" 
+                                  id={`bulk-${sIdx}`} 
+                                  multiple 
+                                  accept="image/*,.zip" 
+                                  className="hidden-input" 
+                                  onChange={(e) => handleItemImageUpload(sIdx, e)} 
+                                />
+                                <label htmlFor={`bulk-${sIdx}`} className="bulk-add-btn primary-btn">
+                                  <span>🚀</span> Bulk / ZIP
+                                </label>
+                              </div>
+
+                              <div className="bulk-upload-wrapper">
+                                <input 
+                                  type="file" 
+                                  id={`folder-${sIdx}`} 
+                                  webkitdirectory="" 
+                                  directory="" 
+                                  multiple 
+                                  className="hidden-input" 
+                                  onChange={(e) => handleItemImageUpload(sIdx, e)} 
+                                />
+                                <label htmlFor={`folder-${sIdx}`} className="bulk-add-btn">
+                                  <span>📂</span> Folder
+                                </label>
+                              </div>
+                            </div>
                           </div>
 
-                          <div className="nested-item-list">
-                            {section.items.map((item, iIdx) => (
-                              <div key={iIdx} className="modern-item-row">
-                                <div className="row-controls">
-                                  <button type="button" className="mini-move" onClick={() => moveItem(sIdx, iIdx, 'up')} disabled={iIdx === 0}>↑</button>
-                                  <button type="button" className="mini-move" onClick={() => moveItem(sIdx, iIdx, 'down')} disabled={iIdx === section.items.length - 1}>↓</button>
-                                </div>
-                                <div className="row-inputs">
-                                  <input type="text" placeholder="Image Title" value={item.title || ''} onChange={e => {
-                                    const newSections = [...formData.designSections];
-                                    newSections[sIdx].items[iIdx].title = e.target.value;
-                                    setFormData({ ...formData, designSections: newSections });
-                                  }} />
-                                  <div className="mini-upload">
-                                    <input type="file" id={`file-${sIdx}-${iIdx}`} accept="image/*" className="hidden-input" onChange={e => handleItemImageUpload(sIdx, iIdx, e)} />
-                                    <label htmlFor={`file-${sIdx}-${iIdx}`} className="mini-file-btn">
-                                      {item.imageBase64 || item.imageUrl ? 'Replace Image' : 'Choose Image'}
-                                    </label>
-                                  </div>
-                                </div>
-                                {(item.imageBase64 || item.imageUrl) && (
-                                  <div className="mini-preview-box">
-                                    <img src={item.imageBase64 || item.imageUrl} alt="Thumbnail" />
+                          <DndContext 
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={(event) => handleDragEnd(event, sIdx)}
+                          >
+                            <SortableContext 
+                              items={section.items.map(item => item.id || item._id || `item-${sIdx}-${section.items.indexOf(item)}`)}
+                              strategy={verticalListSortingStrategy}
+                            >
+                              <div className="nested-item-list">
+                                {section.items.map((item, iIdx) => (
+                                  <SortableImageRow 
+                                    key={item.id || item._id || `item-${sIdx}-${iIdx}`}
+                                    item={item}
+                                    sIdx={sIdx}
+                                    iIdx={iIdx}
+                                    onTitleChange={(newTitle) => {
+                                      const newSections = [...formData.designSections];
+                                      newSections[sIdx].items[iIdx].title = newTitle;
+                                      setFormData({ ...formData, designSections: newSections });
+                                    }}
+                                    onRemove={() => {
+                                      const newSections = [...formData.designSections];
+                                      newSections[sIdx].items = newSections[sIdx].items.filter((_, i) => i !== iIdx);
+                                      setFormData({ ...formData, designSections: newSections });
+                                    }}
+                                  />
+                                ))}
+                                {section.items.length === 0 && (
+                                  <div className="empty-section-placeholder">
+                                    No images yet. Use Bulk Upload to add screens.
                                   </div>
                                 )}
-                                <button type="button" className="row-delete" onClick={() => {
-                                  const newSections = [...formData.designSections];
-                                  newSections[sIdx].items = newSections[sIdx].items.filter((_, i) => i !== iIdx);
-                                  setFormData({ ...formData, designSections: newSections });
-                                }}>✕</button>
                               </div>
-                            ))}
-                            <button type="button" className="add-nested-btn" onClick={() => {
-                              const newSections = [...formData.designSections];
-                              newSections[sIdx].items.push({ title: '', imageBase64: '' });
-                              setFormData({ ...formData, designSections: newSections });
-                            }}>+ Add Image to "{section.title || 'Section'}"</button>
-                          </div>
+                            </SortableContext>
+                          </DndContext>
                         </div>
                       ))}
                       <button type="button" className="add-section-btn" onClick={() => setFormData({ ...formData, designSections: [...formData.designSections, { title: '', items: [{ title: '', imageBase64: '' }] }] })}>
