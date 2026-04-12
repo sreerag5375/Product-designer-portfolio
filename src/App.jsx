@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { DotLottiePlayer } from '@dotlottie/react-player';
 import JSZip from 'jszip';
 import {
@@ -269,6 +269,10 @@ const SortableDesignSection = ({
 };
 
 const Portfolio = () => {
+  const { projectSlug } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [activeTab, setActiveTab] = useState('works');
   const [isWindowVisible, setIsWindowVisible] = useState(true);
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -279,6 +283,41 @@ const Portfolio = () => {
   useEffect(() => {
     fetchProjects();
   }, []);
+
+  // Handle slug-based project selection
+  useEffect(() => {
+    if (projects.length > 0) {
+      if (projectSlug) {
+        // If we have a slug in the URL, try to find the project
+        const found = projects.find(p => 
+          p.slug === projectSlug || 
+          p._id === projectSlug || 
+          (p.name && p.name.toLowerCase().replace(/[\s_-]+/g, '-') === projectSlug)
+        );
+        if (found) {
+          setSelectedFolder(found._id);
+          setActiveTab('works');
+          setIsWindowVisible(true);
+        } else if (projectSlug === 'admin') {
+          // If it's admin, handle it (though App routing handles it too)
+          return;
+        } else {
+          // If slug not found, maybe it's another tab?
+          const tabs = ['about', 'works', 'writings', 'learning'];
+          if (tabs.includes(projectSlug)) {
+            setActiveTab(projectSlug);
+            setIsWindowVisible(true);
+            setSelectedFolder(null);
+          }
+        }
+      } else {
+        // No slug, reset project selection if on main works page
+        if (location.pathname === '/') {
+          setSelectedFolder(null);
+        }
+      }
+    }
+  }, [projectSlug, projects, location.pathname]);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -397,7 +436,10 @@ const Portfolio = () => {
               ) : (
                 /* Real Folders */
                 projects.map(folder => (
-                  <div key={folder._id} className="folder-item" onClick={() => setSelectedFolder(folder._id)}>
+                  <div key={folder._id} className="folder-item" onClick={() => {
+                    setSelectedFolder(folder._id);
+                    navigate(`/${folder.slug || folder._id}`);
+                  }}>
                     <div className="folder-icon-wrapper">
                       <img src="/folder.png" alt="Folder" className="folder-img" />
                     </div>
@@ -441,7 +483,10 @@ const Portfolio = () => {
               <div className="traffic-lights">
                 {selectedFolder && activeTab === 'works' ? (
                   <div className="header-left-actions">
-                    <button className="header-back-button" onClick={() => setSelectedFolder(null)}>
+                    <button className="header-back-button" onClick={() => {
+                      setSelectedFolder(null);
+                      navigate('/');
+                    }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg>
                     </button>
                     <button className="header-fullscreen-button" onClick={() => setIsFullScreen(!isFullScreen)}>
@@ -482,7 +527,16 @@ const Portfolio = () => {
             <button
               key={item.id}
               className={`dock-item ${activeTab === item.id ? 'active' : ''}`}
-              onClick={() => { setActiveTab(item.id); setIsWindowVisible(true); }}
+              onClick={() => { 
+                setActiveTab(item.id); 
+                setIsWindowVisible(true);
+                if (item.id === 'works' && selectedFolder) {
+                  const project = projects.find(p => p._id === selectedFolder);
+                  if (project) navigate(`/${project.slug || project._id}`);
+                } else if (item.id !== 'works') {
+                  navigate('/'); // Or navigate common routes? For now simpler as is.
+                }
+              }}
             >
               <div className="dock-item-content">
                 <span className="tooltip">{item.label}</span>
@@ -1224,6 +1278,7 @@ const App = () => {
     <Routes>
       <Route path="/" element={<Portfolio />} />
       <Route path="/admin" element={<Admin />} />
+      <Route path="/:projectSlug" element={<Portfolio />} />
     </Routes>
   );
 };

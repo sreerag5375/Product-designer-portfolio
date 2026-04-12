@@ -41,10 +41,27 @@ const ProjectSchema = new mongoose.Schema({
       imageBase64: String,
     }]
   }],
+  slug: {
+    type: String,
+    unique: true,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
   },
+});
+
+// Auto-generate slug from name if not present
+ProjectSchema.pre('save', function(next) {
+  if (this.name && !this.slug) {
+    this.slug = this.name
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+  next();
 });
 
 // Avoid re-declaring the model if it already exists
