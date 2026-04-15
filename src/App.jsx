@@ -399,9 +399,18 @@ const Portfolio = () => {
 
               {/* Screenshots — only available after lazy fetch completes */}
               {detailLoading || !projectDetail ? (
-                <div className="screenshots-loading">
-                  <div className="detail-spinner"></div>
-                  <p className="detail-loading-text">Loading design screenshots…</p>
+                <div className="content-section">
+                  {/* Skeleton section title */}
+                  <div className="skeleton-section-title shimmer"></div>
+                  {/* Skeleton screenshot cards */}
+                  <div className="screenshots-tray">
+                    {[1, 2, 3, 4].map(i => (
+                      <div key={i} className="screen-card skeleton-card">
+                        <div className="skeleton-screen shimmer"></div>
+                        <div className="skeleton-screen-label shimmer"></div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 projectDetail.designSections?.map((section, sIdx) => (

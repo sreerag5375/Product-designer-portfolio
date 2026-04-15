@@ -2301,3 +2301,59 @@ header {
   justify-content: flex-end;
   gap: 12px;
 }
+
+/* =============================================
+   Screenshot Skeleton Cards
+   ============================================= */
+
+/* Reuse the existing shimmer keyframe via .shimmer class */
+.skeleton-section-title {
+  height: 22px;
+  width: 160px;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+}
+
+.skeleton-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  pointer-events: none;
+}
+
+/* Phone-shaped skeleton — portrait aspect ratio like a real app screenshot */
+.skeleton-screen {
+  width: 160px;
+  height: 280px;
+  border-radius: 16px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+}
+
+/* Title bar beneath the skeleton screen */
+.skeleton-screen-label {
+  width: 80px;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+}
+
+/* Stagger the shimmer start times for a natural wave feel */
+.skeleton-card:nth-child(1) .skeleton-screen,
+.skeleton-card:nth-child(1) .skeleton-screen-label { animation-delay: 0s; }
+
+.skeleton-card:nth-child(2) .skeleton-screen,
+.skeleton-card:nth-child(2) .skeleton-screen-label { animation-delay: 0.15s; }
+
+.skeleton-card:nth-child(3) .skeleton-screen,
+.skeleton-card:nth-child(3) .skeleton-screen-label { animation-delay: 0.3s; }
+
+.skeleton-card:nth-child(4) .skeleton-screen,
+.skeleton-card:nth-child(4) .skeleton-screen-label { animation-delay: 0.45s; }
