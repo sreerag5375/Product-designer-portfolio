@@ -9,18 +9,56 @@ export default async function handler(req, res) {
   switch (method) {
     case 'GET':
       try {
-        const { fields, id } = req.query;
+        const { fields, id, section, item } = req.query;
 
-        // Fetch a single project by _id or slug (for project detail page)
+        // --- Single project fetch ---
         if (id) {
           let project = await Project.findById(id).catch(() => null);
-          if (!project) {
-            project = await Project.findOne({ slug: id });
+          if (!project) project = await Project.findOne({ slug: id });
+          if (!project) return res.status(404).json({ success: false, error: 'Project not found' });
+
+          const obj = project.toObject();
+
+          // ?id=xxx&section=0&item=0  →  return ONE specific image (High performance $slice)
+          if (section !== undefined && item !== undefined) {
+            const sIdx = parseInt(section, 10);
+            const iIdx = parseInt(item, 10);
+            const projection = { designSections: { $slice: [sIdx, 1] } };
+            
+            // Optimization: Fetch only the required section using $slice
+            let partialProject = await Project.findById(id).select(projection).lean().catch(() => null);
+            if (!partialProject) {
+              partialProject = await Project.findOne({ slug: id }).select(projection).lean();
+            }
+
+            if (!partialProject) return res.status(404).json({ success: false, error: 'Project not found' });
+            
+            // Due to $slice: [sIdx, 1], the requested section is always at index 0
+            const sec = partialProject.designSections?.[0];
+            const singleItem = sec?.items?.[iIdx];
+
+            if (!singleItem) return res.status(404).json({ success: false, error: 'Item not found' });
+            return res.status(200).json({ sectionIdx: sIdx, itemIdx: iIdx, item: singleItem });
           }
-          if (!project) {
-            return res.status(404).json({ success: false, error: 'Project not found' });
+
+          // ?id=xxx&section=0  →  return section structure WITHOUT imageBase64
+          if (section !== undefined) {
+            const idx = parseInt(section, 10);
+            const sec = obj.designSections?.[idx];
+            if (!sec) return res.status(404).json({ success: false, error: 'Section not found' });
+            
+            // Return only titles and IDs for items in this section
+            const itemsShell = (sec.items || []).map(it => ({ _id: it._id, title: it.title }));
+            return res.status(200).json({ sectionIdx: idx, title: sec.title, items: itemsShell });
           }
-          return res.status(200).json(project);
+
+          // ?id=xxx  →  return project metadata WITHOUT imageBase64 in items
+          //              (just section titles + item titles — instant response)
+          obj.designSections = (obj.designSections || []).map(sec => ({
+            ...sec,
+            items: (sec.items || []).map(item => ({ _id: item._id, title: item.title }))
+          }));
+          return res.status(200).json(obj);
         }
 
         // Lightweight list mode — text fields only, NO designSections images

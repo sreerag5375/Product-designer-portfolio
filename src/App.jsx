@@ -279,8 +279,11 @@ const Portfolio = () => {
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [projectDetail, setProjectDetail] = useState(null); // lazily-loaded full project
-  const [detailLoading, setDetailLoading] = useState(false);
+  const [projectMeta, setProjectMeta] = useState(null);   // project without images (instant)
+  const [itemImages, setItemImages] = useState({});       // { "sIdx-iIdx": itemObject }
+  const [metaLoading, setMetaLoading] = useState(false);
+  // Keep a ref to abort stale section fetches when switching projects
+  const currentProjectId = React.useRef(null);
 
   useEffect(() => {
     fetchProjects();
@@ -300,7 +303,7 @@ const Portfolio = () => {
           setSelectedFolder(found._id);
           setActiveTab('works');
           setIsWindowVisible(true);
-          fetchProjectDetail(found._id);
+          fetchProjectMeta(found._id);
         } else if (projectSlug === 'admin') {
           return;
         } else {
@@ -314,7 +317,8 @@ const Portfolio = () => {
       } else {
         if (location.pathname === '/') {
           setSelectedFolder(null);
-          setProjectDetail(null);
+          setProjectMeta(null);
+          setItemImages({});
         }
       }
     }
@@ -339,19 +343,54 @@ const Portfolio = () => {
     }
   };
 
-  // Lazy-load the full project (with images) only when a folder is opened
-  const fetchProjectDetail = async (idOrSlug) => {
-    setDetailLoading(true);
-    setProjectDetail(null);
+  // Fetch project metadata (no images) then load all individual images in parallel
+  const fetchProjectMeta = async (id) => {
+    // Reset state for the new project
+    currentProjectId.current = id;
+    setProjectMeta(null);
+    setItemImages({});
+    setMetaLoading(true);
+
     try {
-      const response = await fetch(`/api/projects?id=${encodeURIComponent(idOrSlug)}`);
-      if (!response.ok) throw new Error('Failed to fetch project detail');
-      const data = await response.json();
-      setProjectDetail(data);
+      // Step 1: get project structure (section titles + item titles) — instant
+      const res = await fetch(`/api/projects?id=${encodeURIComponent(id)}`);
+      if (!res.ok) throw new Error('Failed to fetch project');
+      const meta = await res.json();
+
+      // Bail if user switched project mid-flight
+      if (currentProjectId.current !== id) return;
+      setProjectMeta(meta);
+      setMetaLoading(false);
+
+      // Step 2: Trigger parallel fetches for every single image
+      const sections = meta.designSections || [];
+      sections.forEach((section, sIdx) => {
+        const items = section.items || [];
+        items.forEach((item, iIdx) => {
+          // Trigger fetch (don't await) — browser handles parallel queueing
+          fetch(`/api/projects?id=${encodeURIComponent(id)}&section=${sIdx}&item=${iIdx}`)
+            .then(async iRes => {
+              if (!iRes.ok) {
+                const errData = await iRes.json().catch(() => ({}));
+                return Promise.reject(`Status ${iRes.status}: ${errData.error || 'Unknown error'}`);
+              }
+              return iRes.json();
+            })
+            .then(iData => {
+              // Ensure we are still looking at the same project
+              if (currentProjectId.current !== id) return;
+              
+              setItemImages(prev => ({ 
+                ...prev, 
+                [`${sIdx}-${iIdx}`]: iData.item 
+              }));
+            })
+            .catch(e => console.error(`Item ${sIdx}-${iIdx} fetch failed:`, e));
+        });
+      });
     } catch (err) {
       console.error(err);
-    } finally {
-      setDetailLoading(false);
+      setMetaLoading(false);
     }
   };
 
@@ -359,25 +398,24 @@ const Portfolio = () => {
     switch (activeTab) {
       case 'works':
         if (selectedFolder) {
-          // Use cached lightweight data for instant render — already in memory
+          // Cached lightweight folder data (already in memory from folder grid)
           const cachedFolder = projects.find(f => f._id === selectedFolder);
+          const folder = projectMeta || cachedFolder;
 
-          // Use full detail once loaded, fall back to cached for text fields
-          const folder = projectDetail || cachedFolder;
-
-          // If we somehow have no data at all, show spinner
           if (!folder) {
             return (
               <div className="detail-loading-state">
                 <div className="detail-spinner"></div>
-                <p className="detail-loading-text">Loading project…</p>
+                <p className="detail-loading-text">Opening project…</p>
               </div>
             );
           }
 
+          const sections = folder.designSections || [];
+
           return (
             <div className="project-detail animate-in">
-              {/* Header — renders immediately from cached data */}
+              {/* Header — immediate from cache */}
               <div className="project-header-row">
                 <div className="project-logo-box">
                   <img src={folder.logoBase64} alt="Logo" />
@@ -392,17 +430,43 @@ const Portfolio = () => {
                 </div>
               </div>
 
-              {/* Description — renders immediately from cached data */}
+              {/* Description — immediate */}
               <div className="content-section">
                 <div className="what-we-like-text">{renderFormattedText(folder.description)}</div>
               </div>
 
-              {/* Screenshots — only available after lazy fetch completes */}
-              {detailLoading || !projectDetail ? (
+              {/* Sections — structure loads instantly, screenshots populate in parallel */}
+              {sections.map((section, sIdx) => {
+                const isWebType = folder.type === 'website' || folder.type === 'webapp';
+                const itemsToRender = section.items || [];
+
+                return (
+                  <div key={sIdx} className="content-section">
+                    <h2 className="section-label">{section.title}</h2>
+                    <div className={`screenshots-tray ${isWebType ? 'is-web' : ''}`}>
+                      {itemsToRender.map((item, iIdx) => {
+                        const loadedItem = itemImages[`${sIdx}-${iIdx}`];
+                        return loadedItem ? (
+                          <div key={iIdx} className="screen-card">
+                            <img src={loadedItem.imageBase64 || loadedItem.imageUrl} alt={loadedItem.title} className="screen-shot" loading="lazy" />
+                            <span className="screen-title">{loadedItem.title}</span>
+                          </div>
+                        ) : (
+                          <div key={iIdx} className="screen-card skeleton-card">
+                            <div className="skeleton-screen shimmer"></div>
+                            <div className="skeleton-screen-label shimmer">{item.title || 'Loading...'}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Skeleton placeholder if metadata not yet loaded */}
+              {metaLoading && (
                 <div className="content-section">
-                  {/* Skeleton section title */}
                   <div className="skeleton-section-title shimmer"></div>
-                  {/* Skeleton screenshot cards */}
                   <div className="screenshots-tray">
                     {[1, 2, 3, 4].map(i => (
                       <div key={i} className="screen-card skeleton-card">
@@ -412,23 +476,9 @@ const Portfolio = () => {
                     ))}
                   </div>
                 </div>
-              ) : (
-                projectDetail.designSections?.map((section, sIdx) => (
-                  <div key={sIdx} className="content-section">
-                    <h2 className="section-label">{section.title}</h2>
-                    <div className={`screenshots-tray ${(folder.type === 'website' || folder.type === 'webapp') ? 'is-web' : ''}`}>
-                      {section.items?.map((item, iIdx) => (
-                        <div key={iIdx} className="screen-card">
-                          <img src={item.imageBase64} alt={item.title} className="screen-shot" loading="lazy" />
-                          <span className="screen-title">{item.title}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))
               )}
 
-              {/* Links — renders immediately from cached data */}
+              {/* Links — immediate from cache */}
               {(folder.links?.website || folder.links?.playStore || folder.links?.appStore) && (
                 <div className="project-footer-links">
                   <div className="footer-divider"></div>
@@ -491,8 +541,9 @@ const Portfolio = () => {
                 projects.map(folder => (
                   <div key={folder._id} className="folder-item" onClick={() => {
                     setSelectedFolder(folder._id);
-                    setProjectDetail(null);
-                    fetchProjectDetail(folder._id);
+                    setProjectMeta(null);
+                    setItemImages({});
+                    fetchProjectMeta(folder._id);
                     navigate(`/${folder.slug || folder._id}`);
                   }}>
                     <div className="folder-icon-wrapper">
