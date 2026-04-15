@@ -473,6 +473,26 @@ header {
   letter-spacing: 0.01em;
 }
 
+/* Inline screenshots loading — sits below description in the content flow */
+.screenshots-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem 0;
+  margin-top: 0.5rem;
+}
+
+.screenshots-loading .detail-spinner {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+  flex-shrink: 0;
+}
+
+.screenshots-loading .detail-loading-text {
+  font-size: 0.85rem;
+}
+
 .back-button {
   display: flex;
   align-items: center;

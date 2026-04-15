@@ -359,8 +359,14 @@ const Portfolio = () => {
     switch (activeTab) {
       case 'works':
         if (selectedFolder) {
-          // Show spinner while fetching full project data (images etc.)
-          if (detailLoading || !projectDetail) {
+          // Use cached lightweight data for instant render — already in memory
+          const cachedFolder = projects.find(f => f._id === selectedFolder);
+
+          // Use full detail once loaded, fall back to cached for text fields
+          const folder = projectDetail || cachedFolder;
+
+          // If we somehow have no data at all, show spinner
+          if (!folder) {
             return (
               <div className="detail-loading-state">
                 <div className="detail-spinner"></div>
@@ -369,9 +375,9 @@ const Portfolio = () => {
             );
           }
 
-          const folder = projectDetail;
           return (
             <div className="project-detail animate-in">
+              {/* Header — renders immediately from cached data */}
               <div className="project-header-row">
                 <div className="project-logo-box">
                   <img src={folder.logoBase64} alt="Logo" />
@@ -386,24 +392,34 @@ const Portfolio = () => {
                 </div>
               </div>
 
+              {/* Description — renders immediately from cached data */}
               <div className="content-section">
                 <div className="what-we-like-text">{renderFormattedText(folder.description)}</div>
               </div>
 
-              {folder.designSections?.map((section, sIdx) => (
-                <div key={sIdx} className="content-section">
-                  <h2 className="section-label">{section.title}</h2>
-                  <div className={`screenshots-tray ${(folder.type === 'website' || folder.type === 'webapp') ? 'is-web' : ''}`}>
-                    {section.items?.map((item, iIdx) => (
-                      <div key={iIdx} className="screen-card">
-                        <img src={item.imageBase64} alt={item.title} className="screen-shot" loading="lazy" />
-                        <span className="screen-title">{item.title}</span>
-                      </div>
-                    ))}
-                  </div>
+              {/* Screenshots — only available after lazy fetch completes */}
+              {detailLoading || !projectDetail ? (
+                <div className="screenshots-loading">
+                  <div className="detail-spinner"></div>
+                  <p className="detail-loading-text">Loading design screenshots…</p>
                 </div>
-              ))}
+              ) : (
+                projectDetail.designSections?.map((section, sIdx) => (
+                  <div key={sIdx} className="content-section">
+                    <h2 className="section-label">{section.title}</h2>
+                    <div className={`screenshots-tray ${(folder.type === 'website' || folder.type === 'webapp') ? 'is-web' : ''}`}>
+                      {section.items?.map((item, iIdx) => (
+                        <div key={iIdx} className="screen-card">
+                          <img src={item.imageBase64} alt={item.title} className="screen-shot" loading="lazy" />
+                          <span className="screen-title">{item.title}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
 
+              {/* Links — renders immediately from cached data */}
               {(folder.links?.website || folder.links?.playStore || folder.links?.appStore) && (
                 <div className="project-footer-links">
                   <div className="footer-divider"></div>

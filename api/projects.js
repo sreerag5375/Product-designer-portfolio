@@ -23,11 +23,11 @@ export default async function handler(req, res) {
           return res.status(200).json(project);
         }
 
-        // Lightweight list mode — only return fields needed for folder grid
+        // Lightweight list mode — text fields only, NO designSections images
         if (fields === 'list') {
           const projects = await Project.find({})
             .sort({ createdAt: -1 })
-            .select('name slug type category subtitle logoBase64 createdAt');
+            .select('name slug type category subtitle description links logoBase64 createdAt');
           return res.status(200).json(projects);
         }
 
