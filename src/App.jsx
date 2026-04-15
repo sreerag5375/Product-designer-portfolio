@@ -279,6 +279,8 @@ const Portfolio = () => {
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [projectDetail, setProjectDetail] = useState(null); // lazily-loaded full project
+  const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
     fetchProjects();
@@ -298,11 +300,10 @@ const Portfolio = () => {
           setSelectedFolder(found._id);
           setActiveTab('works');
           setIsWindowVisible(true);
+          fetchProjectDetail(found._id);
         } else if (projectSlug === 'admin') {
-          // If it's admin, handle it (though App routing handles it too)
           return;
         } else {
-          // If slug not found, maybe it's another tab?
           const tabs = ['about', 'works', 'writings', 'learning'];
           if (tabs.includes(projectSlug)) {
             setActiveTab(projectSlug);
@@ -311,9 +312,9 @@ const Portfolio = () => {
           }
         }
       } else {
-        // No slug, reset project selection if on main works page
         if (location.pathname === '/') {
           setSelectedFolder(null);
+          setProjectDetail(null);
         }
       }
     }
@@ -322,18 +323,35 @@ const Portfolio = () => {
   const fetchProjects = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/projects');
+      // Only fetch lightweight fields — name, slug, type, category (NO images)
+      const response = await fetch('/api/projects?fields=list');
       if (!response.ok) throw new Error('Failed to fetch projects');
       const data = await response.json();
       setProjects(data);
     } catch (err) {
       console.error(err);
       setProjects([
-        { _id: '1', name: 'LIVO', description: 'Smart logistics and delivery platform.', type: 'webapp', category: 'Logistics' },
-        { _id: '2', name: 'Arikil Ai', description: 'Personalized AI assistant for daily tasks.', type: 'app', category: 'AI' }
+        { _id: '1', name: 'LIVO', type: 'webapp', category: 'Logistics' },
+        { _id: '2', name: 'Arikil Ai', type: 'app', category: 'AI' }
       ]);
     } finally {
-      setTimeout(() => setLoading(false), 800); // Slight delay for smooth transition
+      setLoading(false);
+    }
+  };
+
+  // Lazy-load the full project (with images) only when a folder is opened
+  const fetchProjectDetail = async (idOrSlug) => {
+    setDetailLoading(true);
+    setProjectDetail(null);
+    try {
+      const response = await fetch(`/api/projects?id=${encodeURIComponent(idOrSlug)}`);
+      if (!response.ok) throw new Error('Failed to fetch project detail');
+      const data = await response.json();
+      setProjectDetail(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDetailLoading(false);
     }
   };
 
@@ -341,7 +359,17 @@ const Portfolio = () => {
     switch (activeTab) {
       case 'works':
         if (selectedFolder) {
-          const folder = projects.find(f => f._id === selectedFolder);
+          // Show spinner while fetching full project data (images etc.)
+          if (detailLoading || !projectDetail) {
+            return (
+              <div className="detail-loading-state">
+                <div className="detail-spinner"></div>
+                <p className="detail-loading-text">Loading project…</p>
+              </div>
+            );
+          }
+
+          const folder = projectDetail;
           return (
             <div className="project-detail animate-in">
               <div className="project-header-row">
@@ -368,7 +396,7 @@ const Portfolio = () => {
                   <div className={`screenshots-tray ${(folder.type === 'website' || folder.type === 'webapp') ? 'is-web' : ''}`}>
                     {section.items?.map((item, iIdx) => (
                       <div key={iIdx} className="screen-card">
-                        <img src={item.imageBase64} alt={item.title} className="screen-shot" />
+                        <img src={item.imageBase64} alt={item.title} className="screen-shot" loading="lazy" />
                         <span className="screen-title">{item.title}</span>
                       </div>
                     ))}
@@ -438,6 +466,8 @@ const Portfolio = () => {
                 projects.map(folder => (
                   <div key={folder._id} className="folder-item" onClick={() => {
                     setSelectedFolder(folder._id);
+                    setProjectDetail(null);
+                    fetchProjectDetail(folder._id);
                     navigate(`/${folder.slug || folder._id}`);
                   }}>
                     <div className="folder-icon-wrapper">

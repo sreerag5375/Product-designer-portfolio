@@ -9,8 +9,31 @@ export default async function handler(req, res) {
   switch (method) {
     case 'GET':
       try {
+        const { fields, id } = req.query;
+
+        // Fetch a single project by _id or slug (for project detail page)
+        if (id) {
+          let project = await Project.findById(id).catch(() => null);
+          if (!project) {
+            project = await Project.findOne({ slug: id });
+          }
+          if (!project) {
+            return res.status(404).json({ success: false, error: 'Project not found' });
+          }
+          return res.status(200).json(project);
+        }
+
+        // Lightweight list mode — only return fields needed for folder grid
+        if (fields === 'list') {
+          const projects = await Project.find({})
+            .sort({ createdAt: -1 })
+            .select('name slug type category subtitle logoBase64 createdAt');
+          return res.status(200).json(projects);
+        }
+
+        // Full list (admin, etc.)
         const projects = await Project.find({}).sort({ createdAt: -1 });
-        
+
         // Auto-migrate: check for missing slugs
         const needsSlug = projects.filter(p => !p.slug);
         if (needsSlug.length > 0) {
@@ -18,14 +41,12 @@ export default async function handler(req, res) {
             try {
               const doc = await Project.findById(p._id);
               if (doc && !doc.slug) {
-                // The pre-save hook will handle slug generation
                 await doc.save();
               }
             } catch (err) {
               console.error(`Migration failed for ${p._id}:`, err);
             }
           }
-          // Only refresh if we actually modified something
           const finalProjects = await Project.find({}).sort({ createdAt: -1 });
           return res.status(200).json(finalProjects);
         }
